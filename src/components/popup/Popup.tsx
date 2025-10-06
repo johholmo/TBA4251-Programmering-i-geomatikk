@@ -31,6 +31,8 @@ export default function Popup({
 }: Props) {
   const [showHint, setShowHint] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const hasSteps = typeof step === "number" && typeof totalSteps === "number";
+
 
   useEffect(() => {
     if (!isOpen) return;
@@ -47,17 +49,20 @@ export default function Popup({
     <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" onMouseDown={(e) => {
       // close when clicking outside content
       if (e.target === e.currentTarget) onClose();
-    }}>
-      <div className="modal" ref={dialogRef}>
-        <div className="modal-header" style={{ background: highlightColor }}>
-          <div className="modal-step">
-            {typeof step === "number" && typeof totalSteps === "number" ? (
-              <span>Steg {step} av {totalSteps}</span>
-            ) : <span>&nbsp;</span>}
-          </div>
-          <h2 id="modal-title">{title}</h2>
-          <button className="modal-close" onClick={onClose} aria-label="Lukk">✕</button>
-        </div>
+      }}>
+        <div className="modal" ref={dialogRef}>
+
+<div className="modal-header" style={{ background: highlightColor }}>
+  {hasSteps && (
+    <div className="modal-step">
+      <span>Steg {step} av {totalSteps}</span>
+    </div>
+  )}
+
+  <h2 className="modal-title">{title}</h2>
+
+  <button className="modal-close" onClick={onClose} aria-label="Lukk">✕</button>
+</div>
 
         <div className="modal-body">
           <div className="modal-content">{children}</div>

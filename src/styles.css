@@ -113,6 +113,11 @@ body {
   border-radius: 999px;
   color: var(--ink-200);
 }
+.toolbar .btn-label {
+  font-weight: 550;
+  font-size: medium;
+}
+
 
 /* Buttons */
 .btn {
@@ -192,10 +197,13 @@ body {
 }
 .map-placeholder h2 { margin: 0 0 6px; }
 
+.leaflet-container { z-index: 0; }
+
+
 /* Modal / Popup */
 .modal-overlay {
   position: fixed; inset: 0;
-  background: rgba(0, 0, 0, 0.25); /* lett dim, ikke for mørk */
+  background: rgba(0, 0, 0, 0.25);
   display: grid; place-items: center;
   z-index: 50;
 }
@@ -208,23 +216,60 @@ body {
   overflow: hidden;
 }
 .modal-header {
-  display: grid; grid-template-columns: 1fr auto 40px; align-items: center;
+  display: flex;
+  align-items: center;      /* sikrer at alt er vertikalt sentrert */
+  justify-content: center;  /* sentrerer tittel i bredden */
+  position: relative;
   padding: 14px 16px;
-  color: #ffffff;
   background: var(--brand);
+  color: #ffffff;
 }
+
+/* Tittel: sentrert, ingen marginer som skyver */
+.modal-title {
+  margin: 0;
+  color: #ffffff;
+  font-weight: 800;
+  letter-spacing: .2px;
+  text-align: center;
+  flex: 1;                  /* fyller tilgjengelig plass mellom venstre og høyre */
+}
+
+/* Steps til venstre (valgfritt) */
+.modal-step {
+  position: absolute;
+  left: 16px;
+  font-weight: 600;
+}
+
+/* Close-knapp helt til høyre */
+.modal-close {
+  position: absolute;
+  right: 16px;
+  background: rgba(255,255,255,0.2);
+  border: none;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;           /* sentrerer ikonet */
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
 .modal-header h2 {
   margin: 0; text-align: center; color: #ffffff; font-weight: 800; letter-spacing: .2px;
 }
-.modal-step { font-weight: 700; }
-.modal-close {
-  width: 32px; height: 32px; border-radius: 8px;
-  border: none; background: rgba(255,255,255,.2); color: #ffffff; cursor: pointer;
-}
+
 
 .modal-body { padding: 16px; }
 .modal-content { color: var(--ink-200); }
 .modal-hint { margin-top: 12px; }
+
 .link-btn {
   background: transparent; border: none; color: var(--brand); cursor: pointer;
   padding: 0; font-weight: 600;
@@ -331,4 +376,59 @@ body {
 .tour-next-btn:hover {
   transform: translateX(3px) scale(1.05);
   color: #4C6F5B; /* litt mørkere ved hover */
+}
+
+
+.upload-dropzone {
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  background: #F8F6F1;
+}
+.upload-dropzone:hover {
+  background: #f3efe6;
+}
+
+
+
+.layer-row {
+  display: grid;
+  grid-template-columns: 32px 32px 1fr 32px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  margin-bottom: 8px;
+}
+
+.layer-row .eye,
+.layer-row .row-remove {
+  background: #fff;
+  border: 1px solid var(--border-2);
+  border-radius: 8px;
+  height: 32px; width: 32px;
+  display: grid; place-items: center;
+  cursor: pointer;
+}
+.layer-row .eye.on { border-color: var(--brand); }
+.layer-row .eye.off { opacity: .6; }
+
+.layer-row .color {
+  width: 32px; height: 32px;
+  padding: 0;
+  border: 1px solid var(--border-2);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.layer-row .name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ink);
+  font-size: 14px;
 }
