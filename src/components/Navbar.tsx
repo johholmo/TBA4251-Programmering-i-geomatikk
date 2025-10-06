@@ -1,18 +1,22 @@
 import ToolbarButton from "./ToolbarButton";
 
+type Props = {
+    onStartTour?: () => void;
+  };
+
 export default function Navbar() {
-  // Foreløpig: bare knapper uten funksjon. Knyttes opp senere.
+  // TODO: Legge til funksjon på hver av knappene her
   return (
     <nav className="toolbar">
-      <ToolbarButton icon="⬆️" label="Last opp data" onClick={() => alert("Upload…")} />
+      <ToolbarButton id="tool-upload" icon="⬆️" label="Last opp data" onClick={() => alert("Her mangler funksjonalitet foreløpig")} />
       <div className="toolbar-sep" />
-      <ToolbarButton icon="🫧" label="Buffer" onClick={() => alert("Buffer…")} />
-      <ToolbarButton icon="🔀" label="Intersect" onClick={() => alert("Intersect…")} />
-      <ToolbarButton icon="➕" label="Union" onClick={() => alert("Union…")} />
-      <ToolbarButton icon="➖" label="Difference" onClick={() => alert("Difference…")} />
-      <ToolbarButton icon="✂️" label="Clip" onClick={() => alert("Clip…")} />
-      <div className="toolbar-spacer" />
-      <span className="toolbar-chip">Gjeldende oppgave: Velkommen</span>
+      <ToolbarButton id="tool-buffer" icon="🫧" label="Buffer" onClick={() => alert("Her mangler funksjonalitet foreløpig")} />
+      <ToolbarButton id="tool-intersect" icon="🔀" label="Intersect" onClick={() => alert("Her mangler funksjonalitet foreløpig")} />
+      <ToolbarButton id="tool-union" icon="➕" label="Union" onClick={() => alert("Her mangler funksjonalitet foreløpig")} />
+      <ToolbarButton id="tool-diff" icon="➖" label="Difference" onClick={() => alert("Her mangler funksjonalitet foreløpig")} />
+      <ToolbarButton id="tool-clip" icon="✂️" label="Clip" onClick={() => alert("Her mangler funksjonalitet foreløpig")} />
+<div className="toolbar-spacer" />
+      <ToolbarButton id="tool-current-task" className="toolbar-chip" icon="🧠" label="Pågående oppgave" onClick={() => alert("Her mangler funksjonalitet foreløpig")} />
     </nav>
   );
 }

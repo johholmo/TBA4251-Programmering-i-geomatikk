@@ -1,13 +1,16 @@
 type Props = {
+    id?: string;
     icon?: string;
     label: string;
     onClick?: () => void;
+    className?: string;
     disabled?: boolean;
   };
   
-  export default function ToolbarButton({ icon, label, onClick, disabled }: Props) {
+  export default function ToolbarButton({ id, icon, label, onClick, disabled }: Props) {
     return (
       <button
+        id={id}
         className="btn"
         onClick={onClick}
         disabled={disabled}

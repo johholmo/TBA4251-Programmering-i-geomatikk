@@ -1,10 +1,11 @@
 import { useState } from "react";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
-import Popup from "./components/Popup";
+import WelcomePopup from "./components/WelcomePopup";
 
 export default function App() {
   const [showWelcome, setShowWelcome] = useState(true);
+  const [showStartTasks, setShowStartTasks] = useState(false);
 
   return (
     <div className="app-root">
@@ -14,6 +15,8 @@ export default function App() {
         </div>
         <Navbar />
       </header>
+
+      
 
       <aside className="app-sidebar">
         <Sidebar />
@@ -30,43 +33,12 @@ export default function App() {
         </div>
       </main>
 
-      {/* Gjenbrukbar popup – velkomst/walkthrough-start */}
-      <Popup
+      <WelcomePopup
         isOpen={showWelcome}
         onClose={() => setShowWelcome(false)}
-        title="Velkommen til walkthrough"
-        step={1}
-        totalSteps={9}
-        highlightColor="var(--brand)"
-        hintContent={
-          <ul>
-            <li>Du kan alltid se fremdriften øverst.</li>
-            <li>Bruk verktøylinjen for å løse hvert steg.</li>
-            <li>Tips: Slå av/på lag i sidepanelet.</li>
-          </ul>
-        }
-        actions={[
-          {
-            label: "Vis verktøy-intro",
-            variant: "secondary",
-            onClick: () => alert("Coachmarks kommer her i neste iterasjon ✨"),
-          },
-          {
-            label: "Start oppgave",
-            variant: "primary",
-            onClick: () => setShowWelcome(false),
-          },
-        ]}
-      >
-        <p>
-          I denne guiden finner du trygge områder for ny bebyggelse i Trondheim ved
-          å bruke GIS-verktøy steg for steg.
-        </p>
-        <p>
-          Klikk <b>Start oppgave</b> for å begynne, eller <b>Vis verktøy-intro</b> for en
-          kort omvisning i menyen.
-        </p>
-      </Popup>
+        onAfterTour={() => setShowStartTasks(true)} // valgfritt
+      />
+
     </div>
   );
 }
