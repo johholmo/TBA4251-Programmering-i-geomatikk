@@ -33,7 +33,6 @@ export default function Popup({
   const dialogRef = useRef<HTMLDivElement>(null);
   const hasSteps = typeof step === "number" && typeof totalSteps === "number";
 
-
   useEffect(() => {
     if (!isOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -46,23 +45,32 @@ export default function Popup({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" onMouseDown={(e) => {
-      // close when clicking outside content
-      if (e.target === e.currentTarget) onClose();
-      }}>
-        <div className="modal" ref={dialogRef}>
+    <div
+      className="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+      onMouseDown={(e) => {
+        // close when clicking outside content
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="modal" ref={dialogRef}>
+        <div className="modal-header" style={{ background: highlightColor }}>
+          {hasSteps && (
+            <div className="modal-step">
+              <span>
+                Steg {step} av {totalSteps}
+              </span>
+            </div>
+          )}
 
-<div className="modal-header" style={{ background: highlightColor }}>
-  {hasSteps && (
-    <div className="modal-step">
-      <span>Steg {step} av {totalSteps}</span>
-    </div>
-  )}
+          <h2 className="modal-title">{title}</h2>
 
-  <h2 className="modal-title">{title}</h2>
-
-  <button className="modal-close" onClick={onClose} aria-label="Lukk">✕</button>
-</div>
+          <button className="modal-close" onClick={onClose} aria-label="Lukk">
+            ✕
+          </button>
+        </div>
 
         <div className="modal-body">
           <div className="modal-content">{children}</div>

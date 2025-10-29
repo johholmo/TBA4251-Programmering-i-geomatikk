@@ -5,22 +5,33 @@ type Props = {
   onClose: () => void;
 };
 
-export default function Task1IntroPopup({ isOpen, onClose }: Props) {
+export default function Task1({ isOpen, onClose }: Props) {
   return (
     <Popup
       isOpen={isOpen}
       onClose={onClose}
-      title="Oppgave 1 – Last opp nødvendig data"
+      title="Oppgave 1 – Last opp nødvendige data"
       step={1}
-      totalSteps={5}
+      totalSteps={10}
       highlightColor="var(--brand)"
-      actions={[
-        { label: "Lukk", variant: "secondary", onClick: onClose },
-      ]}
+      actions={[{ label: "Lukk", variant: "secondary", onClick: onClose }]}
     >
-      <p>Først og fremst må du laste opp datalag.</p>
-      <p>På GitHub, i mappen "data" finner du datalag hentet fra GeoNorge. Last disse ned fra GitHub og last dem opp her. </p>
-      
+      <p>
+        Først må vi samle grunnlagsdataene som skal brukes i analysen. Du finner datasettene på{" "}
+        <b>GitHub</b> i mappen <code>data</code>. Disse er hentet fra GeoNorge.
+      </p>
+
+      <p>Last opp følgende lag for å komme i gang:</p>
+      <ul>
+        <li>FKB-Bygning</li>
+        <li>FKB-Vann</li>
+        <li>FKB-Veg</li>
+        <li>Flomsoner</li>
+        <li>Skredfaresoner</li>
+        <li>NTNU Campuser (punktdata)</li>
+      </ul>
+
+      <p>Når alle lagene er lastet opp, kan du lukke dette vinduet for å gå videre.</p>
     </Popup>
   );
 }
