@@ -1,0 +1,22 @@
+{
+  "type": "FeatureCollection",
+  "name": "NTNU_campuser",
+  "crs": { "type": "name", "properties": { "name": "EPSG:25832" } },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "navn": "NTNU Gløshaugen" },
+      "geometry": { "type": "Point", "coordinates": [570039.304995, 7033061.551751] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "navn": "NTNU Kalvskinnet" },
+      "geometry": { "type": "Point", "coordinates": [569262.0765712014, 7034078.02486328] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "navn": "NTNU Dragvoll" },
+      "geometry": { "type": "Point", "coordinates": [573445.3864451682, 7031962.266573179] }
+    }
+  ]
+}
