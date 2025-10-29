@@ -1,6 +1,12 @@
 import Popup from "./Popup";
 
-export default function Task10({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+type Props = {
+  isOpen: boolean;
+  onClose: () => void;
+  onAdvance: () => void;
+};
+
+export default function Task3({ isOpen, onClose, onAdvance }: Props) {
   return (
     <Popup
       isOpen={isOpen}
@@ -9,7 +15,14 @@ export default function Task10({ isOpen, onClose }: { isOpen: boolean; onClose: 
       step={10}
       totalSteps={10}
       highlightColor="var(--brand)"
-      actions={[{ label: "Lukk", variant: "primary", onClick: onClose }]}
+      actions={[
+        { label: "Lukk", variant: "secondary", onClick: onClose },
+        {
+          label: "Neste oppgave",
+          variant: "primary",
+          onClick: onAdvance,
+        },
+      ]}
     >
       <p>
         Du har nå identifisert områder som oppfyller alle kriterier: trygghet, tilgjengelighet og

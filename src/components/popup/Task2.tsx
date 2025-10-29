@@ -3,9 +3,10 @@ import Popup from "./Popup";
 type Props = {
   isOpen: boolean;
   onClose: () => void;
+  onAdvance: () => void;
 };
 
-export default function Task2({ isOpen, onClose }: Props) {
+export default function Task2({ isOpen, onClose, onAdvance }: Props) {
   return (
     <Popup
       isOpen={isOpen}
@@ -14,7 +15,14 @@ export default function Task2({ isOpen, onClose }: Props) {
       step={2}
       totalSteps={10}
       highlightColor="var(--brand)"
-      actions={[{ label: "Lukk", variant: "primary", onClick: onClose }]}
+      actions={[
+        { label: "Lukk", variant: "secondary", onClick: onClose },
+        {
+          label: "Neste oppgave",
+          variant: "primary",
+          onClick: onAdvance,
+        },
+      ]}
     >
       <p>
         Datasettene du lastet opp dekker store områder. Vi skal nå avgrense analysen til{" "}

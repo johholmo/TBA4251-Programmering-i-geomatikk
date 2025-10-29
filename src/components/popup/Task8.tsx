@@ -1,6 +1,12 @@
 import Popup from "./Popup";
 
-export default function Task8({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+type Props = {
+  isOpen: boolean;
+  onClose: () => void;
+  onAdvance: () => void;
+};
+
+export default function Task3({ isOpen, onClose, onAdvance }: Props) {
   return (
     <Popup
       isOpen={isOpen}
@@ -9,7 +15,14 @@ export default function Task8({ isOpen, onClose }: { isOpen: boolean; onClose: (
       step={8}
       totalSteps={10}
       highlightColor="var(--brand)"
-      actions={[{ label: "Lukk", variant: "primary", onClick: onClose }]}
+      actions={[
+        { label: "Lukk", variant: "secondary", onClick: onClose },
+        {
+          label: "Neste oppgave",
+          variant: "primary",
+          onClick: onAdvance,
+        },
+      ]}
     >
       <p>
         Terreng med høy helning er uegnet for store bygg. Importer et høydelag (DEM) og bruk{" "}
