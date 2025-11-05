@@ -11,32 +11,33 @@ export default function Task2({ isOpen, onClose, onAdvance }: Props) {
     <Popup
       isOpen={isOpen}
       onClose={onClose}
-      title="Oppgave 2 – Klipp til Trondheim sentrum"
-      step={2}
-      totalSteps={10}
-      highlightColor="var(--brand)"
+      title="Oppgave 2 – Tegn avgrensning og klipp data"
       actions={[
         { label: "Lukk", variant: "secondary", onClick: onClose },
-        {
-          label: "Neste oppgave",
-          variant: "primary",
-          onClick: onAdvance,
-        },
+        { label: "Neste oppgave", variant: "primary", onClick: onAdvance },
       ]}
     >
       <p>
-        Datasettene du lastet opp dekker store områder. Vi skal nå avgrense analysen til{" "}
-        <b>Trondheim sentrum</b>.
+        Nå skal vi begrense analysen til et mindre område i Trondheim. I kartet har du en{" "}
+        <b>polygon-knapp</b> (tegneverktøyet rett under zoom-knappene). Bruk den til å tegne et
+        polygon rundt området du vil jobbe videre med.
       </p>
-
       <p>
-        Bruk polygonverktøyet i kartet til å tegne et område rundt sentrum (for eksempel mellom Ila
-        og Gløshaugen). Deretter bruker du <b>Clip-verktøyet</b> for å klippe alle lagene til dette
-        området.
+        Klikk deg rundt området for å lage polygonet, og avslutt ved å klikke på første punkt igjen.
+        Når du lagrer polygonet blir det dukker det opp som et eget lag i oversikten til venstre.
       </p>
-
       <p>
-        Når du har laget de klippede lagene, kan du slette de gamle for å holde prosjektet ryddig.
+        Deretter åpner du <b>Clip</b>-verktøyet i verktøylinjen, velger datasettet du lastet opp i
+        oppgave 1 som <i>lag som skal klippes</i>, og polygonet du nettopp tegnet som{" "}
+        <i>klipp mot</i>. Da får du et nytt, klippet lag som bare dekker området du tegnet.
+      </p>
+      <p>
+        Når du ser at klippet laget er på plass i sidebaren kan du gjerne slette det opprinnelige,
+        uklippede laget for å holde prosjektet ryddig.
+      </p>
+      <p>
+        Når du har: <b>1)</b> tegnet polygonet, <b>2)</b> klippet datasettet mot det, og <b>3)</b>{" "}
+        ryddet opp i lagene – da kan du gå videre til neste oppgave.
       </p>
     </Popup>
   );

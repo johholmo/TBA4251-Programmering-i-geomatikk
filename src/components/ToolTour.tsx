@@ -1,23 +1,34 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-type Step = { anchorId: string; text: string; };
+type Step = { anchorId: string; text: string };
 
 type Props = {
   open: boolean;
   steps: Step[];
-  onClose: () => void;      // behold for API, men vi kaller den ikke i tvungen modus
+  onClose: () => void;
   onComplete: () => void;
 };
 
 export default function Tour({ open, steps, onComplete }: Props) {
-  const [index, setIndex] = useState(0);
-  const coachRef = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{ top: number; left: number; placement: "below" | "above"; caretOffsetX: number }>({
-    top: 0, left: 0, placement: "below", caretOffsetX: 24,
-  });
+  const [index, setIndex] = useState(0); // current step in tour
+  const coachRef = useRef<HTMLDivElement>(null); // ref to box showing the description text
+  const [pos, setPos] = useState<{
+    top: number;
+    left: number;
+    placement: "below" | "above";
+    caretOffsetX: number;
+  }>({
+    top: 0,
+    left: 0,
+    placement: "below",
+    caretOffsetX: 24,
+  }); // position of box
 
-  useEffect(() => { if (open) setIndex(0); }, [open]);
+  // Start at step 0
+  useEffect(() => {
+    if (open) setIndex(0);
+  }, [open]);
 
   const step = steps[index];
   const anchorRect = useMemo(() => {
@@ -31,6 +42,7 @@ export default function Tour({ open, steps, onComplete }: Props) {
     else onComplete();
   }
 
+  // Reposition box when scrolling og changing window size
   useEffect(() => {
     if (!open) return;
     const onWin = () => positionCoach();
@@ -42,7 +54,10 @@ export default function Tour({ open, steps, onComplete }: Props) {
     };
   }, [open, step]);
 
-  useLayoutEffect(() => { if (open) positionCoach();}, [open, step]);
+  // place box
+  useLayoutEffect(() => {
+    if (open) positionCoach();
+  }, [open, step]);
 
   function positionCoach() {
     if (!anchorRect) return;
@@ -60,9 +75,10 @@ export default function Tour({ open, steps, onComplete }: Props) {
     const placement: "below" | "above" = enoughSpaceBelow ? "below" : "above";
 
     const desiredTopBelow = anchorRect.bottom + pageY + margin;
-    let top = placement === "below"
-      ? desiredTopBelow
-      : Math.max(12, anchorRect.top + pageY - coachH - margin);
+    let top =
+      placement === "below"
+        ? desiredTopBelow
+        : Math.max(12, anchorRect.top + pageY - coachH - margin);
 
     const anchorCenterX = anchorRect.left + pageX + anchorRect.width / 2;
     let left = Math.round(anchorCenterX - coachW / 2);
@@ -86,7 +102,7 @@ export default function Tour({ open, steps, onComplete }: Props) {
           top: anchorRect.top + window.scrollY - 8,
           left: anchorRect.left + window.scrollX - 8,
           width: anchorRect.width + 16,
-          height: anchorRect.height + 16
+          height: anchorRect.height + 16,
         }}
       />
 

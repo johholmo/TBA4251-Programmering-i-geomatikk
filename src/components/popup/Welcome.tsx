@@ -11,15 +11,15 @@ type Props = {
 };
 
 const steps = [
-  { anchorId: "tool-upload", text: "Last opp datalag i GeoJSON format" },
+  { anchorId: "tool-upload", text: "Laste opp data i GeoJSON format." },
   { anchorId: "tool-buffer", text: "Lag en buffer rundt objekter (f.eks. 200 m fra vann)." },
   { anchorId: "tool-intersect", text: "Behold kun overlappen mellom to datalag." },
   { anchorId: "tool-union", text: "Slå sammen flere datalag til ett." },
-  { anchorId: "tool-diff", text: "Fjern et datalag fra et annet for å finne differansen" },
-  { anchorId: "tool-clip", text: "Klipp datalag til å passe et annet datalag" },
+  { anchorId: "tool-diff", text: "Fjern et datalag fra et annet for å finne differansen." },
+  { anchorId: "tool-clip", text: "Klipp et datalag til å passe et annet datalag." },
   {
     anchorId: "tool-current-task",
-    text: "Her finner du igjen oppgaven du holder på med om du skulle lure på noe. ",
+    text: "Oppgaven du arbeider med for øyeblikket. ",
   },
 ];
 
@@ -31,7 +31,7 @@ export default function Welcome({ isOpen, onClose, onAfterTour, onStartTasks }: 
       <Popup
         isOpen={isOpen && !showTour} // skjul velkomstpopup mens tour vises
         onClose={onClose}
-        title="Velkommen til Klimarisiko GIS"
+        title="Velkommen til studentbolig-analysen!"
         highlightColor="var(--brand)"
         actions={[
           {
@@ -40,7 +40,7 @@ export default function Welcome({ isOpen, onClose, onAfterTour, onStartTasks }: 
             onClick: () => setShowTour(true),
           },
           {
-            label: "Start på første oppgave",
+            label: "Kom i gang!",
             variant: "primary",
             onClick: () => {
               onClose();
@@ -50,12 +50,13 @@ export default function Welcome({ isOpen, onClose, onAfterTour, onStartTasks }: 
         ]}
       >
         <p>
-          I Klimarisiko GIS skal du finne hvilke områder i Trondheim som er trygge for nye
-          konstruksjoner.
+          Du skal nå jobbe som <b>GIS-analytiker i Trondheim</b> og finne områder som er egnet til
+          for SiT å bygge nye studentboliger. Denne gjennomgangen med oppgaver guider deg i gjennom
+          analysen steg for steg.
         </p>
         <p>
-          Er du klar for å gå i gang allerede, eller vil du ha en kort gjennomgang av verktøyene du
-          kan bruke i dette GISet.
+          Hvis du vil se hvilke verktøy vi skal bruke, kan du ta en rask gjennomgang. Hvis du
+          allerede vet hva du gjør er det bare å sette i gang!
         </p>
       </Popup>
 

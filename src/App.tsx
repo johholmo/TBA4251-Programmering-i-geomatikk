@@ -1,6 +1,10 @@
 import { useState } from "react";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
+import Map from "./components/Map";
+import UploadDialog from "./components/UploadDialog";
+import { LayersProvider } from "./context/LayersContext";
+
 import Welcome from "./components/popup/Welcome";
 import Task1 from "./components/popup/Task1";
 import Task2 from "./components/popup/Task2";
@@ -13,13 +17,9 @@ import Task8 from "./components/popup/Task8";
 import Task9 from "./components/popup/Task9";
 import Task10 from "./components/popup/Task10";
 import Done from "./components/popup/Done";
-import UploadData from "./components/tools/UploadData";
-import Map from "./components/Map";
-import Clip from "./components/tools/Clip";
-import Buffer from "./components/tools/Buffer";
-import Intersect from "./components/tools/Intersect";
-import Union from "./components/tools/Union";
-import Difference from "./components/tools/Difference";
+
+import ClipDialog from "./components/ClipDialog";
+
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
 
@@ -37,10 +37,8 @@ type TaskKey =
   | null;
 
 export default function App() {
-  // UI-åpning/lukking
   const [showWelcome, setShowWelcome] = useState(true);
   const [showTour, setShowTour] = useState(false);
-
   const [showTask1Intro, setShowTask1Intro] = useState(false);
   const [showTask2Intro, setShowTask2Intro] = useState(false);
   const [showTask3Intro, setShowTask3Intro] = useState(false);
@@ -51,18 +49,11 @@ export default function App() {
   const [showTask8Intro, setShowTask8Intro] = useState(false);
   const [showTask9Intro, setShowTask9Intro] = useState(false);
   const [showTask10Intro, setShowTask10Intro] = useState(false);
+  const [lastTask, setLastTask] = useState<TaskKey>(null);
+  const [showDone, setShowDone] = useState(false);
 
   const [showUpload, setShowUpload] = useState(false);
-  const [showClipTool, setShowClipTool] = useState(false);
-  const [showBuffer, setShowBuffer] = useState(false);
-  const [showIntersect, setShowIntersect] = useState(false);
-  const [showUnion, setShowUnion] = useState(false);
-  const [showDiff, setShowDiff] = useState(false);
-
-  const [lastTask, setLastTask] = useState<TaskKey>(null);
-  const [hasUploaded, setHasUploaded] = useState(false);
-
-  const [showDone, setShowDone] = useState(false);
+  const [showClip, setShowClip] = useState(false);
 
   // Åpne oppgaver
   const openTask1 = () => {
@@ -106,19 +97,6 @@ export default function App() {
     setLastTask("task10");
   };
 
-  // Åpne annet
-  const openWelcome = () => setShowWelcome(true);
-  const openUpload = () => setShowUpload(true);
-  const openClipTool = () => setShowClipTool(true);
-  const openBuffer = () => setShowBuffer(true);
-  const openIntersect = () => setShowIntersect(true);
-  const openUnion = () => setShowUnion(true);
-  const openDiff = () => setShowDiff(true);
-  const openDone = () => {
-    setShowDone(true);
-    setLastTask(null);
-  };
-
   // Lukke oppgaver
   const closeTask1 = () => setShowTask1Intro(false);
   const closeTask2 = () => setShowTask2Intro(false);
@@ -131,10 +109,9 @@ export default function App() {
   const closeTask9 = () => setShowTask9Intro(false);
   const closeTask10 = () => setShowTask10Intro(false);
 
-  // Lukke annet
   const closeWelcome = () => setShowWelcome(false);
 
-  // “Neste oppgave”. openTaskX() setter lastTask = "taskX"
+  // Videre til neste oppgave
   const advanceFromTask1 = () => {
     setShowTask1Intro(false);
     openTask2();
@@ -173,19 +150,18 @@ export default function App() {
   };
   const advanceFromTask10 = () => {
     setShowTask10Intro(false);
-    openDone();
+    setShowDone(true);
+    setLastTask(null);
   };
 
-  // Start på nytt - reset alt
-  // TODO: Også slette alle datalag i Map
   const advanceFromDone = () => {
     setShowDone(false);
-    setHasUploaded(false);
     setLastTask(null);
-    setShowWelcome(true);
+    setShowWelcome(true); // Må jeg ha openWelcome også?
+    // TODO: clear alle datalag?
   };
 
-  // “Pågående oppgave”:
+  // Current task knapp øverst til høyre
   const handleCurrentTaskClick = () => {
     switch (lastTask) {
       case "task1":
@@ -209,89 +185,73 @@ export default function App() {
       case "task10":
         return openTask10();
       default:
-        return openWelcome();
+        return setShowWelcome(true);
     }
   };
 
   return (
-    <div className="app-root">
-      <header className="app-header">
-        <div className="brand">
-          <span className="logo-dot" aria-hidden /> Klimarisiko GIS
-        </div>
-        <Navbar
-          onUploadClick={openUpload}
-          onCurrentTaskClick={handleCurrentTaskClick}
-          onOpenClipTool={openClipTool}
-          onOpenBufferTool={openBuffer}
-          onOpenDiffTool={openDiff}
-          onOpenIntersectTool={openIntersect}
-          onOpenUnionTool={openUnion}
+    <LayersProvider>
+      <div className="app-root">
+        <header className="app-header">
+          <div className="brand">
+            <span className="logo-dot" aria-hidden /> Klimarisiko GIS
+          </div>
+          <Navbar
+            onUploadClick={() => setShowUpload(true)}
+            onCurrentTaskClick={handleCurrentTaskClick}
+            onOpenClipTool={() => setShowClip(true)}
+            onOpenBufferTool={() => {}}
+            onOpenDiffTool={() => {}}
+            onOpenIntersectTool={() => {}}
+            onOpenUnionTool={() => {}}
+          />
+        </header>
+
+        <aside className="app-sidebar">
+          <Sidebar />
+        </aside>
+
+        <main className="app-main">
+          <Map />
+        </main>
+
+        {/* Dialoger / Popups */}
+        <UploadDialog isOpen={showUpload} onClose={() => setShowUpload(false)} />
+        <ClipDialog isOpen={showClip} onClose={() => setShowClip(false)} />
+
+        {/* Welcome og Tour */}
+        <Welcome
+          isOpen={showWelcome}
+          onClose={() => setShowWelcome(false)}
+          onAfterTour={() => {
+            setShowTour(false);
+            setShowWelcome(false);
+            openTask1();
+          }}
+          onStartTasks={() => {
+            setShowWelcome(false);
+            openTask1();
+          }}
+          onStartTour={() => {
+            setShowTour(true);
+            setShowWelcome(false);
+          }}
         />
-      </header>
 
-      <aside className="app-sidebar">
-        <Sidebar />
-      </aside>
+        {/* Tasks */}
+        <Task1 isOpen={showTask1Intro} onClose={closeTask1} onAdvance={advanceFromTask1} />
+        <Task2 isOpen={showTask2Intro} onClose={closeTask2} onAdvance={advanceFromTask2} />
+        <Task3 isOpen={showTask3Intro} onClose={closeTask3} onAdvance={advanceFromTask3} />
+        <Task4 isOpen={showTask4Intro} onClose={closeTask4} onAdvance={advanceFromTask4} />
+        <Task5 isOpen={showTask5Intro} onClose={closeTask5} onAdvance={advanceFromTask5} />
+        <Task6 isOpen={showTask6Intro} onClose={closeTask6} onAdvance={advanceFromTask6} />
+        <Task7 isOpen={showTask7Intro} onClose={closeTask7} onAdvance={advanceFromTask7} />
+        <Task8 isOpen={showTask8Intro} onClose={closeTask8} onAdvance={advanceFromTask8} />
+        <Task9 isOpen={showTask9Intro} onClose={closeTask9} onAdvance={advanceFromTask9} />
+        <Task10 isOpen={showTask10Intro} onClose={closeTask10} onAdvance={advanceFromTask10} />
 
-      <main className="app-main">
-        <Map />
-      </main>
-
-      {/* Welcome */}
-      <Welcome
-        isOpen={showWelcome}
-        onClose={closeWelcome}
-        onAfterTour={() => {
-          setShowTour(false);
-          setShowWelcome(false); // ensure Welcome is closed after tour
-          openTask1();
-        }}
-        onStartTasks={() => {
-          closeWelcome();
-          openTask1();
-        }}
-        onStartTour={() => {
-          setShowTour(true);
-          setShowWelcome(false);
-        }}
-      />
-
-      {/* Task popups */}
-      <Task1 isOpen={showTask1Intro} onClose={closeTask1} onAdvance={advanceFromTask1} />
-      <Task2 isOpen={showTask2Intro} onClose={closeTask2} onAdvance={advanceFromTask2} />
-      <Task3 isOpen={showTask3Intro} onClose={closeTask3} onAdvance={advanceFromTask3} />
-      <Task4 isOpen={showTask4Intro} onClose={closeTask4} onAdvance={advanceFromTask4} />
-      <Task5 isOpen={showTask5Intro} onClose={closeTask5} onAdvance={advanceFromTask5} />
-      <Task6 isOpen={showTask6Intro} onClose={closeTask6} onAdvance={advanceFromTask6} />
-      <Task7 isOpen={showTask7Intro} onClose={closeTask7} onAdvance={advanceFromTask7} />
-      <Task8 isOpen={showTask8Intro} onClose={closeTask8} onAdvance={advanceFromTask8} />
-      <Task9 isOpen={showTask9Intro} onClose={closeTask9} onAdvance={advanceFromTask9} />
-      <Task10 isOpen={showTask10Intro} onClose={closeTask10} onAdvance={advanceFromTask10} />
-
-      <Done isOpen={showDone} onClose={() => setShowDone(false)} onAdvance={advanceFromDone} />
-
-      {/* Ikke-task popups */}
-      <UploadData
-        isOpen={showUpload}
-        onClose={() => setShowUpload(false)}
-        onUploaded={() => {
-          setHasUploaded(true);
-          setShowUpload(false);
-          setShowTask1Intro(false);
-          openTask2();
-        }}
-      />
-
-      <Clip isOpen={showClipTool} onClose={() => setShowClipTool(false)} />
-
-      <Buffer isOpen={showBuffer} onClose={() => setShowBuffer(false)} />
-
-      <Intersect isOpen={showIntersect} onClose={() => setShowIntersect(false)} />
-
-      <Union isOpen={showUnion} onClose={() => setShowUnion(false)} />
-
-      <Difference isOpen={showDiff} onClose={() => setShowDiff(false)} />
-    </div>
+        <Done isOpen={showDone} onClose={() => setShowDone(false)} onAdvance={advanceFromDone} />
+      </div>
+    </LayersProvider>
   );
 }

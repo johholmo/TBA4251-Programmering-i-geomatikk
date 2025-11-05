@@ -1,102 +1,116 @@
-import { MapContainer, TileLayer, GeoJSON } from "react-leaflet";
-import type { FeatureCollection } from "geojson";
-import { useMemo, useRef, useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import L from "leaflet";
-import { useLayers } from "../stores/layers";
-import { toWgs84 } from "../utils/reprojectGeoJSON";
+import "leaflet/dist/leaflet.css";
+import { useLayers } from "../context/LayersContext";
+import MapDraw from "./MapDraw";
+
+type LayerEntry = {
+  gj: L.GeoJSON;
+  id: string;
+  color: string;
+  visible: boolean;
+};
 
 export default function Map() {
-  const layers = useLayers((s) => s.layers);
-  const mapRef = useRef<L.Map | null>(null);
-  const [hasZoomed, setHasZoomed] = useState(false);
+  const mapRef = useRef<L.Map | null>(null); // leaflet map så vi ikke lager på nytt hver gang
+  const groupRef = useRef<L.LayerGroup | null>(null);
 
-  // Reprojiser synlige lag til WGS84 kun når de endrer seg
-  const visibleLayers = useMemo(
-    () =>
-      layers
-        .filter((l) => l.visible)
-        .map((l) => ({
-          id: l.id,
-          name: l.name,
-          color: l.color,
-          dataWgs: toSafeWgs(l.data),
-        })),
-    [layers]
+  // kobler sammen react lag og leaflet lag
+  const cacheRef = useRef<globalThis.Map<string, LayerEntry>>(
+    new globalThis.Map<string, LayerEntry>()
   );
 
-  // Zoom til første “boundary” hvis finnes, ellers til samlede lag
+  const { layers } = useLayers();
+
   useEffect(() => {
-  const map = mapRef.current;
-  if (!map) return;
+    // gjør ingenting om kartet allerede er laget
+    if (mapRef.current) return;
 
-  if (hasZoomed || visibleLayers.length === 0) return;
+    const map = L.map("map", {
+      center: [63.4305, 10.3951],
+      zoom: 12,
+      preferCanvas: true,
+    });
 
-  if (visibleLayers.length === 0) return;
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors",
+      maxZoom: 19,
+    }).addTo(map);
 
-  const group = L.featureGroup(
-    visibleLayers.map((v) => L.geoJSON(v.dataWgs as any))
-  );
-  const b = group.getBounds();
-  if (b.isValid()) {
-      map.fitBounds(b.pad(0.05));
-      setHasZoomed(true);
+    // Datagruppe så vi slipper å røre bakrgunnskartet og ting går fortere
+    const dataGroup = L.layerGroup().addTo(map);
+
+    mapRef.current = map;
+    groupRef.current = dataGroup;
+
+    return () => {
+      cacheRef.current.forEach((e) => e.gj.remove());
+      cacheRef.current.clear();
+      dataGroup.clearLayers();
+      map.remove();
+      mapRef.current = null;
+      groupRef.current = null;
+      (window as any).__leaflet_map = null;
+      (window as any).__leaflet_datagroup = null;
+    };
+  }, []);
+
+  // Hver gang react lagene endrer seg, så synkes leaflet lagene
+  useEffect(() => {
+    const group = groupRef.current;
+    if (!group) return;
+
+    const cache = cacheRef.current;
+
+    // Fjern slettede lag fra kartet
+    const idsNow = new Set(layers.map((l) => l.id));
+    for (const [id, entry] of cache.entries()) {
+      if (!idsNow.has(id)) {
+        entry.gj.remove();
+        cache.delete(id);
+      }
     }
-}, [visibleLayers]);
 
+    // Legg til lag og oppdater eksisterende (farge og synlighet)
+    for (const l of layers) {
+      const existing = cache.get(l.id);
+
+      if (!existing) {
+        const gj = L.geoJSON(l.geojson4326 as any, {
+          style: { color: l.color, weight: 1 },
+          pointToLayer: (_f, latlng) => L.circleMarker(latlng, { radius: 4, color: l.color }),
+        });
+
+        if (l.visible) gj.addTo(group);
+        cache.set(l.id, { gj, id: l.id, color: l.color, visible: !!l.visible });
+      } else {
+        if (existing.visible !== l.visible) {
+          if (l.visible) existing.gj.addTo(group);
+          else existing.gj.remove();
+          existing.visible = l.visible;
+        }
+
+        if (existing.color !== l.color) {
+          existing.gj.eachLayer((sub: any) => {
+            if (sub.setStyle) sub.setStyle({ color: l.color });
+            else if (sub instanceof L.CircleMarker) sub.setStyle({ color: l.color });
+          });
+          existing.color = l.color;
+        }
+      }
+    }
+
+    // Rekkefølge (øverst i sidebar = øverst i kart)
+    for (const l of layers) {
+      const entry = cache.get(l.id);
+      if (entry && entry.visible) entry.gj.bringToFront();
+    }
+  }, [layers]);
 
   return (
-    <MapContainer
-  center={[63.43, 10.4]} // Trondheim
-  zoom={11}
-  style={{ height: "100%", width: "100%" }}
-  ref={mapRef}
->
-  <TileLayer
-    attribution='&copy; OpenStreetMap'
-    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-  />
-
-  {visibleLayers.map((v) => (
-    <GeoJSON
-      key={v.id}
-      data={v.dataWgs as FeatureCollection}
-      style={() => styleFor(v.color)}
-      pointToLayer={(_, latlng) =>
-        L.circleMarker(latlng, pointStyleFor(v.color))
-      }
-    />
-  ))}
-</MapContainer>
-
+    <>
+      <div id="map" style={{ width: "100%", height: "100%" }} />
+      <MapDraw />
+    </>
   );
-}
-
-function toSafeWgs(fc: FeatureCollection): FeatureCollection {
-  const maybeCrs = (fc as any).crs?.properties?.name || (fc as any).crs?.name;
-  const isWgs =
-    typeof maybeCrs === "string" &&
-    (maybeCrs.includes("4326") || maybeCrs.toUpperCase().includes("WGS84"));
-
-  return isWgs ? fc : (toWgs84(fc, "EPSG:25832") as FeatureCollection);
-}
-
-
-function styleFor(color: string): L.PathOptions {
-  return {
-    color,
-    weight: 2,
-    opacity: 0.9,
-    fillColor: color,
-    fillOpacity: 0.25,
-  };
-}
-
-function pointStyleFor(color: string): L.CircleMarkerOptions {
-  return {
-    radius: 500,
-    color,
-    weight: 1.5,
-    fillColor: color,
-    fillOpacity: 0.7,
-  };
 }

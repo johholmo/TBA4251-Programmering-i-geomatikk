@@ -1,15 +1,23 @@
 import Popup from "./Popup";
 
-export default function Done({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+export default function Done({
+  isOpen,
+  onClose,
+  onAdvance,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onAdvance: () => void;
+}) {
   return (
     <Popup
       isOpen={isOpen}
       onClose={onClose}
-      title="Oppgave 11 – Ferdig!"
+      title="Fullført!"
       highlightColor="var(--brand)"
       actions={[
-        { label: "Start på nytt", variant: "secondary", onClick: onClose },
-        { label: "Lukk", variant: "primary", onClick: onClose },
+        { label: "Lukk", variant: "secondary", onClick: onClose },
+        { label: "Start på nytt", variant: "primary", onClick: onAdvance },
       ]}
     >
       <p>
