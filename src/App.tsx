@@ -3,6 +3,8 @@ import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
 import Map from "./components/Map";
 import UploadDialog from "./components/UploadDialog";
+import BufferDialog from "./components/BufferDialog";
+import UnionDialog from "./components/UnionDialog";
 import { LayersProvider } from "./context/LayersContext";
 
 import Welcome from "./components/popup/Welcome";
@@ -54,6 +56,8 @@ export default function App() {
 
   const [showUpload, setShowUpload] = useState(false);
   const [showClip, setShowClip] = useState(false);
+  const [showBuffer, setShowBuffer] = useState(false);
+  const [showUnion, setShowUnion] = useState(false);
 
   // Åpne oppgaver
   const openTask1 = () => {
@@ -200,10 +204,12 @@ export default function App() {
             onUploadClick={() => setShowUpload(true)}
             onCurrentTaskClick={handleCurrentTaskClick}
             onOpenClipTool={() => setShowClip(true)}
-            onOpenBufferTool={() => {}}
+            onOpenBufferTool={() => {
+              setShowBuffer(true);
+            }}
             onOpenDiffTool={() => {}}
             onOpenIntersectTool={() => {}}
-            onOpenUnionTool={() => {}}
+            onOpenUnionTool={() => setShowUnion(true)}
           />
         </header>
 
@@ -218,6 +224,8 @@ export default function App() {
         {/* Dialoger / Popups */}
         <UploadDialog isOpen={showUpload} onClose={() => setShowUpload(false)} />
         <ClipDialog isOpen={showClip} onClose={() => setShowClip(false)} />
+        <BufferDialog isOpen={showBuffer} onClose={() => setShowBuffer(false)} />
+        <UnionDialog isOpen={showUnion} onClose={() => setShowUnion(false)} />
 
         {/* Welcome og Tour */}
         <Welcome

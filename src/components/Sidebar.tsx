@@ -101,29 +101,18 @@ export default function Sidebar() {
   // dnd-kit stuff
   const sensors = useSensors(useSensor(PointerSensor));
 
-  const handleDragEnd = (event: any) => {
-    const { active, over } = event;
-    if (!over) return;
-    if (active.id !== over.id) {
-      const oldIndex = layers.findIndex((l) => l.id === active.id);
-      const newIndex = layers.findIndex((l) => l.id === over.id);
-      reorderLayers(oldIndex, newIndex);
-    }
-  };
-
-  // rename
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
-
-  // popup med valg av farge
   const [openPaletteFor, setOpenPaletteFor] = useState<string | null>(null);
-  const popoverRef = useRef<HTMLDivElement | null>(null);
+
+  // legg ref rundt hele sidebar
+  const sidebarRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
       // lukk farge-popup ved klikk utenfor
-      if (!popoverRef.current) return;
-      if (openPaletteFor && !popoverRef.current.contains(e.target as Node)) {
+      if (!sidebarRef.current) return;
+      if (openPaletteFor && !sidebarRef.current.contains(e.target as Node)) {
         setOpenPaletteFor(null);
       }
     }
@@ -135,7 +124,17 @@ export default function Sidebar() {
   const tipText =
     layers.length === 0
       ? "Ingen lag lastet."
-      : "Dra og slipp lagene for å endre rekkefølgen. Øverst i listen = øverst i kartet. Du kan også endre navn og farge, eller gjøre lagene synlige/usynlige.";
+      : "Dra og slipp lagene for å endre rekkefølgen. Nederst i listen = øverst i kartet. Du kan også endre navn og farge, eller gjøre lagene synlige/usynlige.";
+
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (!over) return;
+    if (active.id !== over.id) {
+      const oldIndex = layers.findIndex((l) => l.id === active.id);
+      const newIndex = layers.findIndex((l) => l.id === over.id);
+      reorderLayers(oldIndex, newIndex);
+    }
+  };
 
   const startEdit = (id: string, current: string) => {
     setEditingId(id);
@@ -154,7 +153,7 @@ export default function Sidebar() {
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <SortableContext items={layers.map((l) => l.id)} strategy={verticalListSortingStrategy}>
-        <div className="sidebar sidebar-wide">
+        <div className="sidebar sidebar-wide" ref={sidebarRef}>
           <h4>Lag</h4>
           <p className="muted">{tipText}</p>
 
@@ -166,10 +165,8 @@ export default function Sidebar() {
                 <SortableItem key={l.id} id={l.id}>
                   {(dragHandle) => (
                     <>
-                      {/* drag-handle helt til venstre */}
                       {dragHandle}
 
-                      {/* vis/skjul */}
                       <button
                         className="icon-btn"
                         onClick={() => setVisibility(l.id, !l.visible)}
@@ -179,7 +176,6 @@ export default function Sidebar() {
                         {l.visible ? <IconEye /> : <IconEyeOff />}
                       </button>
 
-                      {/* navn */}
                       <div
                         className="layer-name"
                         title={l.name}
@@ -202,8 +198,7 @@ export default function Sidebar() {
                         )}
                       </div>
 
-                      {/* farge */}
-                      <div className="color-wrapper" ref={popoverRef}>
+                      <div className="color-wrapper">
                         <button
                           className="color-chip"
                           style={{ backgroundColor: l.color }}
@@ -231,7 +226,6 @@ export default function Sidebar() {
                         )}
                       </div>
 
-                      {/* slett */}
                       <button
                         className="icon-btn danger"
                         onClick={() => removeLayer(l.id)}

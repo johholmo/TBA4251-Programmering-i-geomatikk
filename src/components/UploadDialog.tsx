@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import type { FeatureCollection, Geometry } from "geojson";
 import { useLayers } from "../context/LayersContext";
-import { toWGS84 } from "../utils/reproject";
+import { toWGS84, to25832 } from "../utils/reproject";
 
 type Props = {
   isOpen: boolean;
@@ -12,6 +12,42 @@ type Props = {
 function cleanName(fileName: string) {
   const base = fileName.split(/[\\/]/).pop() || fileName;
   return base.replace(/\.(geo)?json$/i, "");
+}
+
+function isEPSG25832(fc: FeatureCollection<Geometry>): boolean {
+  const crsName = (fc as any).crs?.properties?.name as string | undefined;
+  if (!crsName) return false;
+  return crsName.includes("25832");
+}
+
+function isCRS84orWGS(fc: FeatureCollection<Geometry>): boolean {
+  const crsName = (fc as any).crs?.properties?.name as string | undefined;
+  if (crsName && (crsName.includes("4326") || crsName.includes("CRS84"))) {
+    return true;
+  }
+
+  // Fallback: se på tallene hvis det ikke finnes crs-felt i geojson filen
+  const first = fc.features.find((f) => f.geometry && "coordinates" in f.geometry);
+  if (!first || !first.geometry) return false;
+
+  const g: any = first.geometry;
+  let x: number | undefined;
+  let y: number | undefined;
+
+  if (g.type === "Point") {
+    [x, y] = g.coordinates;
+  } else if (g.type === "LineString" || g.type === "MultiPoint") {
+    [x, y] = g.coordinates[0] || [];
+  } else if (g.type === "Polygon" || g.type === "MultiLineString") {
+    [x, y] = g.coordinates[0]?.[0] || [];
+  } else if (g.type === "MultiPolygon") {
+    [x, y] = g.coordinates[0]?.[0]?.[0] || [];
+  }
+
+  if (typeof x !== "number" || typeof y !== "number") return false;
+
+  // Typiske lon/lat grenser
+  return Math.abs(x) <= 180 && Math.abs(y) <= 90;
 }
 
 export default function UploadDialog({ isOpen, onClose }: Props) {
@@ -35,12 +71,32 @@ export default function UploadDialog({ isOpen, onClose }: Props) {
           throw new Error(`${file.name}: Filen må være en GeoJSON FeatureCollection.`);
         }
 
-        const fc4326 = toWGS84(parsed);
+        let geojson4326: FeatureCollection<Geometry>;
+        let geojson25832: FeatureCollection<Geometry>;
+        let sourceCrs: string;
+
+        if (isEPSG25832(parsed)) {
+          // hvis i EPSG:25832, reprojiser til WGS84
+          geojson25832 = parsed;
+          geojson4326 = toWGS84(parsed);
+          sourceCrs = "EPSG:25832";
+        } else if (isCRS84orWGS(parsed)) {
+          // hvis i CRS84/WGS84, bruk som 4326
+          geojson4326 = parsed;
+          geojson25832 = to25832(parsed);
+          sourceCrs = "EPSG:4326";
+        } else {
+          // Hvis vi ikke kan tolke fra filen, anta EPSG:25832
+          geojson25832 = parsed;
+          geojson4326 = toWGS84(parsed);
+          sourceCrs = "EPSG:25832";
+        }
+
         addLayer({
           name: cleanName(file.name),
-          sourceCrs: "EPSG:25832", // Assume layers are on correct format, since data should come from GitHub in this case
-          geojson25832: parsed,
-          geojson4326: fc4326,
+          sourceCrs,
+          geojson25832,
+          geojson4326,
         });
       }
       onClose();

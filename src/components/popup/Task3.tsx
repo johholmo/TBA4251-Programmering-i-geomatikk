@@ -1,41 +1,46 @@
 import Popup from "./Popup";
 
-type Props = {
+type Props3 = {
   isOpen: boolean;
   onClose: () => void;
   onAdvance: () => void;
 };
 
-export default function Task3({ isOpen, onClose, onAdvance }: Props) {
+export default function Task3({ isOpen, onClose, onAdvance }: Props3) {
   return (
     <Popup
       isOpen={isOpen}
       onClose={onClose}
-      title="Oppgave 3 – Trygg avstand fra vann"
-      step={3}
-      totalSteps={10}
-      highlightColor="var(--brand)"
+      title="Oppgave 3 – Vann og flomsoner"
       actions={[
         { label: "Lukk", variant: "secondary", onClick: onClose },
-        {
-          label: "Neste oppgave",
-          variant: "primary",
-          onClick: onAdvance,
-        },
+        { label: "Neste oppgave", variant: "primary", onClick: onAdvance },
       ]}
     >
       <p>
-        Områder for nær vann og elver kan være utsatt for flom og erosjon. Vi skal derfor holde oss
-        minst <b>200 meter</b> unna vann.
+        Nå skal vi finne de områdene som <b>ikke</b> egner seg til bygging på grunn av vann. Vi
+        bruker både vann- og flomsone-data, og lager én samlet “ikke bygg her”-flate.
       </p>
 
       <p>
-        Bruk <b>Buffer-verktøyet</b> på vannlaget (<code>FKB-Vann</code>) med radius 200 meter for å
-        lage en buffersone. Deretter bruker du <b>Difference</b> for å fjerne disse områdene fra
-        resten av studieområdet.
+        1. Last opp <b>FKB-Vann</b> og <b>Flomsoner</b>. Klipp dem gjerne først til området du
+        tegnet i oppgave 2 slik at det blir mer oversiktlig og ikke for mye data å holde styr på.
       </p>
 
-      <p>Når du er ferdig, vil kartet vise områder som ligger trygt unna vannsoner.</p>
+      <p>
+        2. Bruk <b>Buffer</b>-verktøyet på det klippede vannlaget og lag en buffer på f.eks.{" "}
+        <b>200 meter</b>. Dette gir deg et datalag med områder innenfor 200 meter fra vannet.
+      </p>
+
+      <p>
+        3. Bruk <b>Union</b>-verktøyet til å slå sammen <b> vann-bufferen</b> og <b>flomsonene</b>{" "}
+        til ett lag. Dette blir flaten som sier “her bygger vi ikke”.
+      </p>
+
+      <p>
+        Når du har laget datalaget for områder det ikke skal bygges på pga vann, kan du gå videre
+        til neste oppgave.
+      </p>
     </Popup>
   );
 }

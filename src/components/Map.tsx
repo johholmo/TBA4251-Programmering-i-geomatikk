@@ -43,6 +43,9 @@ export default function Map() {
     mapRef.current = map;
     groupRef.current = dataGroup;
 
+    (window as any).__leaflet_map = map;
+    (window as any).__leaflet_datagroup = dataGroup;
+
     return () => {
       cacheRef.current.forEach((e) => e.gj.remove());
       cacheRef.current.clear();
@@ -100,7 +103,7 @@ export default function Map() {
       }
     }
 
-    // Rekkefølge (øverst i sidebar = øverst i kart)
+    // Rekkefølge (nederst i sidebar = øverst i kart)
     for (const l of layers) {
       const entry = cache.get(l.id);
       if (entry && entry.visible) entry.gj.bringToFront();

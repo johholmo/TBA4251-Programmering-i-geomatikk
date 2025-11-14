@@ -44,18 +44,6 @@ body {
     "Segoe UI Emoji";
 }
 
-/* Layout */
-.app-root {
-  display: grid;
-  grid-template-rows: 64px 1fr;
-  grid-template-columns: 320px 1fr;
-  grid-template-areas:
-    "header header"
-    "sidebar main";
-  height: 100%;
-  gap: 12px;
-  padding: 12px;
-}
 
 .app-header {
   grid-area: header;
@@ -138,10 +126,14 @@ body {
   border-radius: 999px;
   color: var(--ink-200);
 }
+
 .toolbar .btn-label {
   font-weight: 550;
-  font-size: medium;
+  font-size: 14px;
+  line-height: 1.1;
+  white-space: nowrap;
 }
+
 
 /* Buttons */
 .btn {
@@ -200,12 +192,7 @@ body {
   color: var(--brand);
 }
 
-/* Sidebar */
-.sidebar {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
+
 .sidebar-header {
   display: flex;
   align-items: center;
@@ -254,75 +241,39 @@ body {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.35);
   display: grid;
   place-items: center;
   z-index: 50;
 }
+
 .modal {
+  position: relative;
   width: min(640px, calc(100% - 32px));
   max-width: 700px;
   background: #ffffff;
   border: 1px solid var(--border);
   border-radius: 16px;
   box-shadow: var(--shadow);
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
 }
+
+
 
 /* For very small, focused popups (upload, naming) */
 .modal--narrow {
   width: min(420px, calc(100% - 32px));
   max-width: 420px;
 }
-.modal-header {
-  display: flex;
-  align-items: center; /* sikrer at alt er vertikalt sentrert */
-  justify-content: center; /* sentrerer tittel i bredden */
-  position: relative;
-  padding: 14px 16px;
-  background: var(--brand);
-  color: #ffffff;
-}
 
-/* Tittel: sentrert, ingen marginer som skyver */
-.modal-title {
-  margin: 0;
-  color: #ffffff;
-  font-weight: 800;
-  letter-spacing: 0.2px;
-  text-align: center;
-  flex: 1; /* fyller tilgjengelig plass mellom venstre og høyre */
-}
-
-/* Close-knapp helt til høyre */
-.modal-close {
-  position: absolute;
-  right: 16px;
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  border-radius: 8px;
-  width: 32px;
-  height: 32px;
-  color: #fff;
-  font-size: 18px;
-  line-height: 1; /* sentrerer ikonet */
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-header h2 {
-  margin: 0;
-  text-align: center;
-  color: #ffffff;
-  font-weight: 800;
-  letter-spacing: 0.2px;
-}
 
 .modal-body {
   padding: 16px;
 }
+
+
 .modal-content {
   color: var(--ink-200);
 }
@@ -348,12 +299,13 @@ body {
 }
 .modal-actions {
   display: flex;
-  gap: 10px;
   justify-content: flex-end;
-  padding: 12px 16px 16px;
-  background: #faf8f3;
-  border-top: 1px solid var(--border);
+  gap: 10px;
+  padding: 0 16px 16px;
+  background: transparent;
+  border-top: none;
 }
+
 
 /* --- Tour / Coachmarks (updated) --- */
 .tour-backdrop {
@@ -465,13 +417,6 @@ body {
   background: #f3efe6;
 }
 
-.upload-busy {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 28px 12px;
-}
 
 .spinner {
   width: 48px;
@@ -480,12 +425,6 @@ body {
   border: 4px solid rgba(0, 0, 0, 0.08);
   border-top-color: var(--brand);
   animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .layer-row .eye,
@@ -525,15 +464,9 @@ body {
 }
 
 
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: grid; place-items: center; z-index: 50; }
-.modal { background: #fff; width: 520px; max-width: calc(100% - 2rem); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.15); }
-.modal-header { display:flex; align-items:center; justify-content:space-between; padding: 12px 16px; border-bottom: 1px solid #eee; }
-.modal-body { padding: 16px; }
-.modal-footer { display:flex; justify-content:flex-end; gap:8px; padding: 12px 16px; border-top: 1px solid #eee; }
 .dropzone { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 28px; text-align: center; cursor: pointer; }
 .dropzone.is-busy { opacity:.6; pointer-events:none; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.sidebar { padding: 12px; }
 .link { background:none; border:none; color:#2563eb; cursor:pointer; }
 
 .muted { color: #64748b; font-size: 12px; margin-top: -6px; margin-bottom: 8px; }
@@ -548,69 +481,6 @@ body {
 }
 .color-swatch:hover { transform: scale(1.1); }
 
-
-/* Bredere sidebar */
-.sidebar.sidebar-wide { width: 340px; }
-
-/* Tips-tekst */
-.muted { color: #64748b; font-size: 12px; margin-top: -6px; margin-bottom: 8px; }
-
-/* Liste */
-.layer-item.is-over { outline: 2px dashed #0ea5e9; background: #f0f9ff; }
-.layer-item:active { cursor: grabbing; }
-
-.layer-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rename-input {
-  width: 100%;
-  font: inherit;
-  padding: 4px 6px;
-  border-radius: 6px;
-  border: 1px solid #cbd5e1;
-  outline: none;
-}
-.rename-input:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,.2); }
-
-/* Ikon-knapper */
-.icon-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 6px;
-  display: grid;
-  place-items: center;
-}
-.icon-btn:hover { background: #e5e7eb; }
-.icon-btn.danger:hover { background: #fee2e2; }
-
-/* Farge-chip og popover */
-.color-wrapper { position: relative; }
-.color-chip {
-  width: 24px; height: 18px;
-  border-radius: 6px;
-  border: 1px solid rgba(0,0,0,.15);
-  cursor: pointer;
-}
-.color-popover {
-  position: absolute;
-  top: 28px; right: 0;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 8px;
-  display: grid;
-  grid-template-columns: repeat(4, 22px);
-  gap: 6px;
-  box-shadow: 0 12px 28px rgba(0,0,0,.12);
-  z-index: 20;
-}
-.color-option {
-  width: 22px; height: 18px;
-  border-radius: 6px;
-  border: 1px solid rgba(0,0,0,.12);
-  cursor: pointer;
-}
-.color-option:hover { transform: scale(1.05); }
 
 
 :root {
@@ -643,13 +513,15 @@ body {
   box-shadow: var(--shadow);
 }
 
-/* Bredere sidebar for innholdet */
-.sidebar.sidebar-wide { width: 100%; } /* fyll hele app-sidebar */
+.sidebar {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+}
 
-/* Tips-tekst og liste (du kan beholde dine) */
-.muted { color: #64748b; font-size: 12px; margin-top: -6px; margin-bottom: 8px; }
 
-.layer-item.is-over { outline: 2px dashed #0ea5e9; background: #f0f9ff; }
+
 .layer-item:active { cursor: grabbing; }
 
 .layer-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -669,43 +541,15 @@ body {
 .icon-btn:hover { background: #e5e7eb; }
 .icon-btn.danger:hover { background: #fee2e2; }
 
-/* Fargechip + popover */
-.color-wrapper { position: relative; }
-.color-chip {
-  width: 28px; height: 20px;
-  border-radius: 6px;
-  border: 1px solid rgba(0,0,0,.15);
-  cursor: pointer;
-}
-.color-popover {
-  position: absolute;
-  top: 28px; right: 0;
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 8px;
-  display: grid;
-  grid-template-columns: repeat(6, 22px); /* flere farger pr rad */
-  gap: 6px;
-  box-shadow: 0 12px 28px rgba(0,0,0,.12);
-  z-index: 20;
-}
-.color-option {
-  width: 22px; height: 18px;
-  border-radius: 6px;
-  border: 1px solid rgba(0,0,0,.12);
-  cursor: pointer;
-}
-.color-option:hover { transform: scale(1.05); }
 
-/* Sentraliser statusen ved opplasting */
 .upload-busy {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding-block: 20px;
+  padding: 20px 12px;
 }
+
 
 /* Custom 'Start Drawing' button styles */
 .leaflet-control-custom {
@@ -847,33 +691,27 @@ body {
 }
 
 .modal-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: 32px 1fr 32px;
   align-items: center;
-  justify-content: center;
-  position: relative;
   padding: 14px 16px;
   background: var(--brand);
   color: #ffffff;
-  /* legg gjerne til min-høyde hvis noen titler går over to linjer */
-  min-height: 54px;
+  border-radius: 16px 16px 0 0;
 }
 
 .modal-title {
+  grid-column: 2;
   margin: 0;
   color: #ffffff;
   font-weight: 800;
   letter-spacing: 0.2px;
   text-align: center;
-  flex: 1;
-  /* viktig: gi plass til close-knappen på høyre side */
-  padding-right: 56px;
 }
 
 .modal-close {
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
+  grid-column: 3;
+  justify-self: end;
   background: rgba(255, 255, 255, 0.2);
   border: none;
   border-radius: 8px;
@@ -887,6 +725,7 @@ body {
   align-items: center;
   justify-content: center;
 }
+
 
 .layer-drag-handle {
   display: flex;
@@ -911,12 +750,6 @@ body {
 .toolbar .btn-icon {
   width: 20px;
   font-size: 17px;
-}
-
-.toolbar .btn-label {
-  font-size: 14px;
-  line-height: 1.1;
-  white-space: nowrap;
 }
 
 /* Separator og spacing */
