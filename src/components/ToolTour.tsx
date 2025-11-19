@@ -37,6 +37,14 @@ export default function Tour({ open, steps, onComplete }: Props) {
     return el ? el.getBoundingClientRect() : null;
   }, [open, step]);
 
+  useEffect(() => {
+    if (!open || !step) return;
+    const el = document.getElementById(step.anchorId);
+    if (!el) return;
+    el.classList.add("tour-active");
+    return () => el.classList.remove("tour-active");
+  }, [open, step]);
+
   function advance() {
     if (index < steps.length - 1) setIndex((i) => i + 1);
     else onComplete();
@@ -95,16 +103,6 @@ export default function Tour({ open, steps, onComplete }: Props) {
   return createPortal(
     <>
       <div className="tour-backdrop" onClick={advance} aria-hidden />
-
-      <div
-        className="tour-highlight"
-        style={{
-          top: anchorRect.top + window.scrollY - 8,
-          left: anchorRect.left + window.scrollX - 8,
-          width: anchorRect.width + 16,
-          height: anchorRect.height + 16,
-        }}
-      />
 
       <div
         className={`tour-coach ${pos.placement === "above" ? "is-above" : "is-below"}`}

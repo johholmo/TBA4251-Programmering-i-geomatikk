@@ -3,6 +3,7 @@ import { useLayers } from "../context/LayersContext";
 import * as turf from "@turf/turf";
 import type { Feature, FeatureCollection, Geometry, Polygon, MultiPolygon } from "geojson";
 import { to25832 } from "../utils/reproject";
+import Popup from "./popup/Popup";
 
 type Props = {
   isOpen: boolean;
@@ -49,7 +50,7 @@ export default function UnionDialog({ isOpen, onClose }: Props) {
     l.geojson4326.features.some((f) => isPoly(f.geometry))
   );
   const selectableLayers = polygonLayers.filter((l) => !selectedIds.includes(l.id));
-  const hasLayers = polygonLayers.length > 0;
+  const hasLayers = polygonLayers.length > 1;
 
   function addSelected(id: string) {
     setSelectedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
@@ -59,281 +60,270 @@ export default function UnionDialog({ isOpen, onClose }: Props) {
     setSelectedIds((prev) => prev.filter((x) => x !== id));
   }
 
-  async function handleUnion() {
-    if (selectedIds.length < 2) return;
+  function handleUnion() {
+    if (selectedIds.length < 2 || busy) return;
 
     setBusy(true);
     setError(null);
 
-    try {
-      const chosenLayers = layers.filter(
-        (l) => selectedIds.includes(l.id) && polygonLayers.some((p) => p.id === l.id)
-      );
+    setTimeout(() => {
+      let success = false;
 
-      if (chosenLayers.length < 2) {
-        throw new Error("Velg minst to lag med polygon-geometrier.");
-      }
+      try {
+        const chosenLayers = layers.filter(
+          (l) => selectedIds.includes(l.id) && polygonLayers.some((p) => p.id === l.id)
+        );
 
-      // Samle alle polygon/multipolygon-features i 4326 format
-      const allPolyFeatures: Feature<Polygon | MultiPolygon>[] = [];
+        if (chosenLayers.length < 2) {
+          throw new Error("Velg minst to lag med polygon-geometrier.");
+        }
 
-      for (const l of chosenLayers) {
-        for (const f of l.geojson4326.features) {
-          if (isPoly(f.geometry)) {
-            const cloned = {
-              // unngå mutasjon
-              type: "Feature",
-              properties: { ...(f.properties || {}) },
-              geometry: JSON.parse(JSON.stringify(f.geometry)),
-            } as Feature<Polygon | MultiPolygon>;
+        // Samle alle polygon/multipolygon-features i 4326 format
+        const allPolyFeatures: Feature<Polygon | MultiPolygon>[] = [];
 
-            allPolyFeatures.push(cloned);
+        for (const l of chosenLayers) {
+          for (const f of l.geojson4326.features) {
+            if (isPoly(f.geometry)) {
+              const cloned = {
+                // unngå mutasjon
+                type: "Feature",
+                properties: { ...(f.properties || {}) },
+                geometry: JSON.parse(JSON.stringify(f.geometry)),
+              } as Feature<Polygon | MultiPolygon>;
+
+              allPolyFeatures.push(cloned);
+            }
           }
         }
-      }
 
-      if (allPolyFeatures.length < 2) {
-        throw new Error("Fant ikke nok polygon-geometrier i de valgte lagene til å lage union.");
-      }
-
-      // Prøver batch-union med featurecollection
-      const fc: FeatureCollection<Polygon | MultiPolygon> = {
-        type: "FeatureCollection",
-        features: allPolyFeatures,
-      };
-
-      let unionFeature: Feature<Polygon | MultiPolygon> | null = null;
-
-      // Try/catch fordi turf tuller seg
-      try {
-        unionFeature = (turf as any).union(fc) as Feature<Polygon | MultiPolygon> | null;
-      } catch (err) {
-        let acc: Feature<Polygon | MultiPolygon> | null = allPolyFeatures[0];
-
-        for (let i = 1; i < allPolyFeatures.length; i++) {
-          const next = allPolyFeatures[i];
-          try {
-            const u = (turf as any).union(acc as any, next as any) as Feature<
-              Polygon | MultiPolygon
-            > | null;
-            if (u) {
-              acc = u;
-            } else {
-            }
-          } catch (e) {}
+        if (allPolyFeatures.length < 2) {
+          throw new Error("Fant ikke nok polygon-geometrier i de valgte lagene til å lage union.");
         }
-        unionFeature = acc;
+
+        // Prøver batch-union med featurecollection
+        const fc: FeatureCollection<Polygon | MultiPolygon> = {
+          type: "FeatureCollection",
+          features: allPolyFeatures,
+        };
+
+        let unionFeature: Feature<Polygon | MultiPolygon> | null = null;
+
+        // Try/catch fordi turf tuller seg og dette funker
+        try {
+          unionFeature = (turf as any).union(fc) as Feature<Polygon | MultiPolygon> | null;
+        } catch {
+          let acc: Feature<Polygon | MultiPolygon> | null = allPolyFeatures[0];
+
+          for (let i = 1; i < allPolyFeatures.length; i++) {
+            const next = allPolyFeatures[i];
+            try {
+              const u = (turf as any).union(acc as any, next as any) as Feature<
+                Polygon | MultiPolygon
+              > | null;
+              if (u) {
+                acc = u;
+              } else {
+              }
+            } catch (e) {}
+          }
+          unionFeature = acc;
+        }
+
+        if (!unionFeature || !unionFeature.geometry) {
+          throw new Error("Klarte ikke å lage union av lagene.");
+        }
+
+        // tilbake til featurecollection
+        const union4326: FeatureCollection<Geometry> = {
+          type: "FeatureCollection",
+          features: [unionFeature as Feature<Geometry>],
+        };
+
+        // projiser
+        const union25832 = to25832(union4326);
+
+        // legg til i sidebar
+        addLayer({
+          name: `UNION_LAYER`,
+          sourceCrs: "EPSG:25832",
+          geojson25832: union25832,
+          geojson4326: union4326,
+          color: chosenLayers[0].color,
+          visible: true,
+        });
+
+        success = true;
+      } catch (e: any) {
+        console.error(e);
+        setError(e?.message || "Klarte ikke å lage union.");
+      } finally {
+        setBusy(false);
+        if (success) {
+          onClose();
+        }
       }
-
-      if (!unionFeature || !unionFeature.geometry) {
-        throw new Error("Klarte ikke å lage union av lagene.");
-      }
-
-      // tilbake til featurecollection
-      const union4326: FeatureCollection<Geometry> = {
-        type: "FeatureCollection",
-        features: [unionFeature as Feature<Geometry>],
-      };
-
-      // projiser
-      const union25832 = to25832(union4326);
-
-      // legg til i sidebar
-      addLayer({
-        name: `UNION_LAYER`,
-        sourceCrs: "EPSG:25832",
-        geojson25832: union25832,
-        geojson4326: union4326,
-        color: chosenLayers[0].color,
-        visible: true,
-      });
-
-      onClose();
-    } catch (e: any) {
-    } finally {
-      setBusy(false);
-    }
+    }, 0);
   }
 
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal>
-      <div className="modal modal--narrow" style={{ maxWidth: 540 }}>
-        <header className="modal-header">
-          <h3 className="modal-title">Union</h3>
-          <button className="modal-close" onClick={onClose} aria-label="Lukk">
-            ×
-          </button>
-        </header>
+    <Popup
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Union"
+      width="narrow"
+      actions={[
+        { label: "Lukk", variant: "secondary", onClick: onClose, disabled: busy },
+        {
+          label: "Slå sammen",
+          variant: "primary",
+          onClick: handleUnion,
+          disabled: busy || selectedIds.length < 2,
+          loading: busy,
+        },
+      ]}
+    >
+      {!hasLayers ? (
+        <div
+          style={{
+            background: "#fef2f2",
+            border: "1px solid #fecaca",
+            borderRadius: 8,
+            color: "#b91c1c",
+            padding: "10px 12px",
+            fontSize: 14,
+            textAlign: "center",
+          }}
+        >
+          Du må ha minst to lag med polygon-geometrier for å lage union.
+        </div>
+      ) : (
+        <div style={{ display: "grid", gap: 16 }}>
+          <div style={{ fontWeight: 600 }}>Velg lag som skal slås sammen</div>
 
-        <div className="modal-body">
-          {!hasLayers ? (
+          {selectedIds.length > 0 && (
             <div
               style={{
-                background: "#fef2f2",
-                border: "1px solid #fecaca",
-                borderRadius: 8,
-                color: "#b91c1c",
-                padding: "10px 12px",
-                fontSize: 14,
-                textAlign: "center",
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 8,
+                minHeight: 36,
               }}
             >
-              Du må ha minst to lag med polygon-geometrier for å lage union.
-            </div>
-          ) : (
-            <div style={{ display: "grid", gap: 16 }}>
-              <div style={{ fontWeight: 600 }}>Velg lag som skal slås sammen</div>
-
-              {selectedIds.length > 0 && (
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: 8,
-                    minHeight: 36,
-                  }}
-                >
-                  {selectedIds.map((id) => {
-                    const l = layers.find((x) => x.id === id);
-                    return (
-                      <span
-                        key={id}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 4,
-                          background: "#f3efe6",
-                          borderRadius: 9999,
-                          border: "1px solid rgba(0,0,0,0.02)",
-                          padding: "3px 10px",
-                          fontSize: 13,
-                        }}
-                      >
-                        {l?.name ?? "Ukjent lag"}
-                        <button
-                          onClick={() => removeSelected(id)}
-                          style={{
-                            background: "transparent",
-                            border: "none",
-                            cursor: "pointer",
-                            fontWeight: 700,
-                            lineHeight: 1,
-                          }}
-                        >
-                          ×
-                        </button>
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* dropdown */}
-              <div style={{ position: "relative" }} ref={listRef}>
-                <button
-                  type="button"
-                  onClick={() => setIsListOpen((x) => !x)}
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: "8px 10px",
-                    borderRadius: isListOpen ? "8px 8px 0 0" : 8,
-                    border: "1px solid var(--border)",
-                    background: "#fff",
-                    cursor: "pointer",
-                  }}
-                >
-                  <span style={{ fontSize: 14 }}>
-                    {selectableLayers.length === 0
-                      ? "Alle polygon-lag er valgt"
-                      : "Legg til lag i union…"}
-                  </span>
-                  <span aria-hidden style={{ fontSize: 12 }}>
-                    ▾
-                  </span>
-                </button>
-
-                {isListOpen && selectableLayers.length > 0 && (
-                  <div
+              {selectedIds.map((id) => {
+                const l = layers.find((x) => x.id === id);
+                const bgColor = l?.color ?? "#f3efe6";
+                return (
+                  <span
+                    key={id}
                     style={{
-                      position: "absolute",
-                      top: "100%",
-                      left: 0,
-                      right: 0,
-                      background: "#fff",
-                      border: "1px solid var(--border)",
-                      borderTop: "none",
-                      borderRadius: "0 0 8px 8px",
-                      boxShadow: "0 14px 30px rgba(0,0,0,0.06)",
-                      maxHeight: 180,
-                      overflowY: "auto",
-                      zIndex: 40,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      background: bgColor,
+                      borderRadius: 9999,
+                      border: "1px solid rgba(0,0,0,0.03)",
+                      padding: "3px 10px",
+                      fontSize: 13,
                     }}
-                    className="clip-dropdown-scroll"
                   >
-                    {selectableLayers.map((l) => (
-                      <button
-                        key={l.id}
-                        onClick={() => addSelected(l.id)}
-                        style={{
-                          width: "100%",
-                          textAlign: "left",
-                          padding: "8px 12px",
-                          border: "none",
-                          background: "transparent",
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 8,
-                        }}
-                      >
-                        <span
-                          style={{
-                            width: 10,
-                            height: 10,
-                            borderRadius: "50%",
-                            background: l.color,
-                          }}
-                        />
-                        <span>{l.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+                    {l?.name ?? "Ukjent lag"}
+                    <button
+                      onClick={() => removeSelected(id)}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        cursor: "pointer",
+                        fontWeight: 700,
+                        lineHeight: 1,
+                      }}
+                    >
+                      ×
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+          )}
 
-              {error && (
-                <div
-                  className="hint-box"
-                  style={{
-                    color: "#b91c1c",
-                    borderColor: "#fecaca",
-                    background: "#fef2f2",
-                  }}
-                >
-                  {error}
-                </div>
-              )}
+          {/* dropdown */}
+          <div style={{ position: "relative" }} ref={listRef}>
+            <button
+              type="button"
+              onClick={() => setIsListOpen((x) => !x)}
+              style={{
+                width: "100%",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 10px",
+                borderRadius: isListOpen ? "8px 8px 0 0" : 8,
+                border: "1px solid var(--border)",
+                background: "#fff",
+                cursor: "pointer",
+              }}
+            >
+              <span style={{ fontSize: 14 }}>
+                {selectableLayers.length === 0
+                  ? "Alle polygon-lag er valgt"
+                  : "Legg til lag i union…"}
+              </span>
+              <span aria-hidden style={{ fontSize: 12 }}>
+                ▾
+              </span>
+            </button>
+
+            {isListOpen && selectableLayers.length > 0 && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  right: 0,
+                  background: "#fff",
+                  border: "1px solid var(--border)",
+                  borderTop: "none",
+                  borderRadius: "0 0 8px 8px",
+                  boxShadow: "0 14px 30px rgba(0,0,0,0.06)",
+                  maxHeight: 260,
+                  overflowY: "auto",
+                  zIndex: 40,
+                }}
+                className="clip-dropdown-scroll"
+              >
+                {selectableLayers.map((l) => (
+                  <button key={l.id} onClick={() => addSelected(l.id)} className="dialog-options">
+                    <span
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        background: l.color,
+                      }}
+                    />
+                    <span>{l.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {error && (
+            <div
+              className="hint-box"
+              style={{
+                color: "#b91c1c",
+                borderColor: "#fecaca",
+                background: "#fef2f2",
+              }}
+            >
+              {error}
             </div>
           )}
         </div>
-
-        <div className="modal-actions">
-          <button className="btn" onClick={onClose} disabled={busy}>
-            Lukk
-          </button>
-          <button
-            className="btn btn-primary"
-            onClick={handleUnion}
-            disabled={busy || selectedIds.length < 2}
-          ></button>
-        </div>
-      </div>
-    </div>
+      )}
+    </Popup>
   );
 }

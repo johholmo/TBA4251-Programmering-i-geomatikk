@@ -13,6 +13,7 @@
   --accent: #c2a68c; /* secondary (warm sand) */
   --border: #e6d8c3; /* soft border */
   --border-2: #dcc8aa; /* slightly stronger border */
+  --border-darker: #a39289;
 
   --radius: 14px;
   --radius-sm: 10px;
@@ -182,10 +183,15 @@ body {
   filter: brightness(1.03);
 }
 .btn-secondary {
-  background: #ffffff;
+  background: #f3f3f0; 
   border: 1px solid var(--border-2);
   color: var(--ink);
 }
+
+.btn-secondary:hover {
+  background: #ecebe6;
+}
+
 .btn-ghost {
   background: transparent;
   border: 1px solid transparent;
@@ -251,13 +257,31 @@ body {
   position: relative;
   width: min(640px, calc(100% - 32px));
   max-width: 700px;
-  background: #ffffff;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  box-shadow: var(--shadow);
+  /* Mykere border / nesten borte */
+  border: 1px solid rgba(163, 146, 137, 0.35);
+  border-radius: 18px;
+  box-shadow:
+    0 18px 50px rgba(0, 0, 0, 0.18),
+    0 0 0 1px rgba(0, 0, 0, 0.02);
+
   display: flex;
   flex-direction: column;
-  overflow: visible;
+
+  /* pop-up effekt */
+  transform: translateY(4px) scale(0.98);
+  opacity: 0;
+  animation: modal-pop-in 200ms ease-out forwards;
+}
+
+@keyframes modal-pop-in {
+  from {
+    transform: translateY(8px) scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
 }
 
 
@@ -271,6 +295,7 @@ body {
 
 .modal-body {
   padding: 16px;
+  background: #ffffff;
 }
 
 
@@ -289,14 +314,7 @@ body {
   padding: 0;
   font-weight: 600;
 }
-.hint-box {
-  margin-top: 8px;
-  padding: 12px;
-  background: #f7f5ef;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  color: var(--ink);
-}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;
@@ -304,7 +322,28 @@ body {
   padding: 0 16px 16px;
   background: transparent;
   border-top: none;
+  background: #ffffff;
+  border-bottom-left-radius: 18px;
+  border-bottom-right-radius: 18px;
 }
+
+.dialog-options {
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.dialog-options:hover {
+  background: #f3efe6; /* eller en annen lys "hover"-farge */
+}
+
 
 
 /* --- Tour / Coachmarks (updated) --- */
@@ -513,14 +552,6 @@ body {
   box-shadow: var(--shadow);
 }
 
-.sidebar {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 12px;
-}
-
-
 
 .layer-item:active { cursor: grabbing; }
 
@@ -574,16 +605,6 @@ body {
   scrollbar-width: none;
 }
 
-
-/* --- LAGLISTE styling --- */
-.layer-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
 
 /* Hvert lag som et lite "kort" */
 .layer-item {
@@ -690,14 +711,24 @@ body {
   transform: scale(1.05);
 }
 
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-top-color: #ffffff;
+  animation: spin 0.6s linear infinite;
+}
+
+
 .modal-header {
   display: grid;
   grid-template-columns: 32px 1fr 32px;
   align-items: center;
   padding: 14px 16px;
   background: var(--brand);
-  color: #ffffff;
-  border-radius: 16px 16px 0 0;
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
 }
 
 .modal-title {
@@ -712,19 +743,64 @@ body {
 .modal-close {
   grid-column: 3;
   justify-self: end;
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
+  background: inherit;
+  border: 0;
   border-radius: 8px;
   width: 32px;
   height: 32px;
-  color: #fff;
+
+  color: #ffffff;
   font-size: 18px;
   line-height: 1;
+
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
 }
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #ffffff;
+}
+
+.modal-close:active {
+  background: rgba(255, 255, 255, 0.35);
+  transform: scale(0.95);
+}
+
+
+
+.sidebar {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+}
+
+/* Gjør selve laglisten scrollable */
+.layer-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  /* viktig: ta opp all ledig plass og tillat scroll */
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px; /* litt luft fra scrollbar */
+}
+
 
 
 .layer-drag-handle {

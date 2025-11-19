@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Popup from "./Popup";
 
 type Props = {
@@ -20,12 +20,18 @@ export default function Naming({
 }: Props) {
   const [value, setValue] = useState(defaultValue);
 
+  useEffect(() => {
+    if (isOpen) {
+      setValue(defaultValue);
+    }
+  }, [isOpen, defaultValue]);
+
   return (
     <Popup
       isOpen={isOpen}
       onClose={onClose}
       title={title}
-      highlightColor="var(--brand)"
+      width="narrow"
       actions={[
         { label: "Avbryt", variant: "secondary", onClick: onClose },
         {
@@ -46,7 +52,7 @@ export default function Naming({
           type="text"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          placeholder="Eks: Klippet område"
+          placeholder="Eks: Area of Interest"
           style={{
             padding: 8,
             borderRadius: 6,
