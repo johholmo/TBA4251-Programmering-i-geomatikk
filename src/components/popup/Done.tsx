@@ -14,7 +14,6 @@ export default function Done({
       isOpen={isOpen}
       onClose={onClose}
       title="Fullført!"
-      highlightColor="var(--brand)"
       actions={[
         { label: "Lukk", variant: "secondary", onClick: onClose },
         { label: "Start på nytt", variant: "primary", onClick: onAdvance },
@@ -22,12 +21,7 @@ export default function Done({
     >
       <p>
         🎉 Gratulerer! Du har fullført hele analysen og funnet de mest egnede områdene for nye
-        studentboliger i Trondheim.
-      </p>
-
-      <p>
-        Du har kombinert <b>miljødata</b>, <b>risikoanalyser</b>, <b>terrengdata</b> og{" "}
-        <b>tilgjengelighet</b> for å utføre en komplett GIS-basert beslutningsanalyse.
+        studentboliger i Trondheim. Dette blir nok SiT veldig glad for!
       </p>
 
       <p>Vil du starte på nytt eller utforske kartet videre?</p>

@@ -1,35 +1,34 @@
 import Popup from "./Popup";
 
-type Props = {
+type Props6 = {
   isOpen: boolean;
   onClose: () => void;
+  onBack: () => void;
   onAdvance: () => void;
 };
 
-export default function Task3({ isOpen, onClose, onAdvance }: Props) {
+export default function Task6({ isOpen, onClose, onBack, onAdvance }: Props6) {
   return (
     <Popup
       isOpen={isOpen}
       onClose={onClose}
-      title="Oppgave 6 – Kombiner trygge og sentrale områder"
-      step={6}
-      totalSteps={10}
-      highlightColor="var(--brand)"
+      title="Oppgave 6 – Fjern uaktuelle områder"
       actions={[
-        { label: "Lukk", variant: "secondary", onClick: onClose },
-        {
-          label: "Neste oppgave",
-          variant: "primary",
-          onClick: onAdvance,
-        },
+        { label: "Forrige oppgave", variant: "secondary", onClick: onBack },
+        { label: "Neste oppgave", variant: "primary", onClick: onAdvance },
       ]}
     >
       <p>
-        Nå skal vi finne områdene som både er trygge og ligger nær campus. Bruk{" "}
-        <b>Intersect-verktøyet</b> mellom de trygge sonene og NTNU-bufferen fra forrige oppgave.
+        Ettersom vi ikke ønsker å bygge i vannområder eller innenfor bufferen, skal vi nå fjerne
+        disse områdene fra <strong>AOI_Trondheim</strong>-laget vårt.
       </p>
 
-      <p>Resultatet viser “trygge og sentrale områder” – gode kandidater for studentboliger.</p>
+      <p>
+        Bruk <strong>Difference</strong>-verktøyet, og trekk datalaget fra forrige oppgave
+        (vannområder med buffer) fra <strong>AOI_Trondheim</strong>.
+      </p>
+
+      <p>Da sitter du igjen med et lag som viser områder som fortsatt kan være aktuelle.</p>
     </Popup>
   );
 }

@@ -2,6 +2,8 @@ import { useEffect, useRef } from "react";
 
 type Action = {
   label: string;
+  disabled?: boolean;
+  loading?: boolean;
   onClick: () => void;
   variant?: "primary" | "secondary" | "ghost";
 };
@@ -10,19 +12,12 @@ type Props = {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  highlightColor?: string;
   actions?: Action[];
   children?: React.ReactNode;
+  width?: "normal" | "narrow";
 };
 
-export default function Popup({
-  isOpen,
-  onClose,
-  title,
-  highlightColor = "var(--brand)",
-  actions = [],
-  children,
-}: Props) {
+export default function Popup({ isOpen, onClose, title, actions = [], children, width }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -47,8 +42,8 @@ export default function Popup({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="modal" ref={dialogRef}>
-        <div className="modal-header" style={{ background: highlightColor }}>
+      <div className={`modal ${width === "narrow" ? "modal--narrow" : ""}`} ref={dialogRef}>
+        <div className="modal-header" style={{ background: "var(--brand)" }}>
           <h2 className="modal-title">{title}</h2>
 
           <button className="modal-close" onClick={onClose} aria-label="Lukk">
@@ -73,8 +68,10 @@ export default function Popup({
               }`}
               onClick={a.onClick}
               type="button"
+              disabled={a.disabled || a.loading}
+              aria-busy={a.loading ? true : undefined}
             >
-              {a.label}
+              {a.loading ? <span className="btn-spinner" aria-hidden="true" /> : a.label}
             </button>
           ))}
         </div>

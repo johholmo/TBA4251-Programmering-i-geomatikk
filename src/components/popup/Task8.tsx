@@ -1,37 +1,36 @@
 import Popup from "./Popup";
 
-type Props = {
+type Props8 = {
   isOpen: boolean;
   onClose: () => void;
+  onBack: () => void;
   onAdvance: () => void;
 };
 
-export default function Task3({ isOpen, onClose, onAdvance }: Props) {
+export default function Task8({ isOpen, onClose, onBack, onAdvance }: Props8) {
   return (
     <Popup
       isOpen={isOpen}
       onClose={onClose}
-      title="Oppgave 8 – Unngå for bratte områder"
-      step={8}
-      totalSteps={10}
-      highlightColor="var(--brand)"
+      title="Oppgave 8 – I nærheten av NTNU"
       actions={[
-        { label: "Lukk", variant: "secondary", onClick: onClose },
-        {
-          label: "Neste oppgave",
-          variant: "primary",
-          onClick: onAdvance,
-        },
+        { label: "Forrige oppgave", variant: "secondary", onClick: onBack },
+        { label: "Neste oppgave", variant: "primary", onClick: onAdvance },
       ]}
     >
       <p>
-        Terreng med høy helning er uegnet for store bygg. Importer et høydelag (DEM) og bruk{" "}
-        <b>Helning-verktøyet</b> for å beregne skråningsgrad.
+        Nå har vi fjernet de områdene det ikke er aktuelt å bygge på, men hva med områder vi ønsker
+        å bygge i?
       </p>
 
       <p>
-        Filtrer bort områder med helning over <b>15°</b> slik at du kun sitter igjen med flate og
-        lett skrånende områder som egner seg for bygging.
+        SiT ønsker at studentboligene skal ligge innenfor <strong>1 kilometer</strong> fra et
+        NTNU-campus. La oss finne disse områdene!
+      </p>
+
+      <p>
+        Last opp datalaget <strong>NTNU_campuser</strong>. Bruk <strong>Buffer</strong> til å lage
+        en buffer på <strong>1000 meter</strong> rundt NTNU-campusene.
       </p>
     </Popup>
   );

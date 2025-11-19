@@ -1,35 +1,32 @@
 import Popup from "./Popup";
 
-type Props = {
+type Props5 = {
   isOpen: boolean;
   onClose: () => void;
+  onBack: () => void;
   onAdvance: () => void;
 };
 
-export default function Task3({ isOpen, onClose, onAdvance }: Props) {
+export default function Task5({ isOpen, onClose, onBack, onAdvance }: Props5) {
   return (
     <Popup
       isOpen={isOpen}
       onClose={onClose}
-      title="Oppgave 5 – Nærhet til NTNU-campuser"
-      step={5}
-      totalSteps={10}
-      highlightColor="var(--brand)"
+      title="Oppgave 5 – Buffer"
       actions={[
-        { label: "Lukk", variant: "secondary", onClick: onClose },
-        {
-          label: "Neste oppgave",
-          variant: "primary",
-          onClick: onAdvance,
-        },
+        { label: "Forrige oppgave", variant: "secondary", onClick: onBack },
+        { label: "Neste oppgave", variant: "primary", onClick: onAdvance },
       ]}
     >
       <p>
-        Studentene bør ha kort vei til campus. Bruk <b>Buffer-verktøyet</b> på{" "}
-        <code>NTNU Campuser</code> for å lage en buffersone på <b>1000 meter</b>.
+        For å være på den sikre siden ønsker vi ikke å bygge helt inntil vannområder. Du skal derfor
+        lage en trygghetssone rundt vannområdene.
       </p>
 
-      <p>Dette laget viser områder som ligger innenfor gang- eller sykkelavstand fra campus.</p>
+      <p>
+        Bruk <strong>Buffer</strong>-verktøyet og lag en buffer på <strong>50 meter</strong> rundt
+        vannområdene.
+      </p>
     </Popup>
   );
 }

@@ -5,6 +5,8 @@ import Map from "./components/Map";
 import UploadDialog from "./components/UploadDialog";
 import BufferDialog from "./components/BufferDialog";
 import UnionDialog from "./components/UnionDialog";
+import IntersectDialog from "./components/IntersectDialog";
+import DifferenceDialog from "./components/DifferenceDialog";
 import { LayersProvider } from "./context/LayersContext";
 
 import Welcome from "./components/popup/Welcome";
@@ -38,6 +40,19 @@ type TaskKey =
   | "task10"
   | null;
 
+const taskOrder: TaskKey[] = [
+  "task1",
+  "task2",
+  "task3",
+  "task4",
+  "task5",
+  "task6",
+  "task7",
+  "task8",
+  "task9",
+  "task10",
+];
+
 export default function App() {
   const [showWelcome, setShowWelcome] = useState(true);
   const [showTour, setShowTour] = useState(false);
@@ -58,6 +73,87 @@ export default function App() {
   const [showClip, setShowClip] = useState(false);
   const [showBuffer, setShowBuffer] = useState(false);
   const [showUnion, setShowUnion] = useState(false);
+  const [showIntersect, setShowIntersect] = useState(false);
+  const [showDifference, setShowDifference] = useState(false);
+
+  const goBack = () => {
+    if (!lastTask) return;
+
+    const index = taskOrder.indexOf(lastTask);
+    if (index <= 0) return; // task1 har ingen forrige
+
+    const prev = taskOrder[index - 1];
+
+    // Lukk nåværende
+    switch (lastTask) {
+      case "task1":
+        setShowTask1Intro(false);
+        break;
+      case "task2":
+        setShowTask2Intro(false);
+        break;
+      case "task3":
+        setShowTask3Intro(false);
+        break;
+      case "task4":
+        setShowTask4Intro(false);
+        break;
+      case "task5":
+        setShowTask5Intro(false);
+        break;
+      case "task6":
+        setShowTask6Intro(false);
+        break;
+      case "task7":
+        setShowTask7Intro(false);
+        break;
+      case "task8":
+        setShowTask8Intro(false);
+        break;
+      case "task9":
+        setShowTask9Intro(false);
+        break;
+      case "task10":
+        setShowTask10Intro(false);
+        break;
+    }
+
+    // Åpne forrige
+    switch (prev) {
+      case "task1":
+        setShowTask1Intro(true);
+        break;
+      case "task2":
+        setShowTask2Intro(true);
+        break;
+      case "task3":
+        setShowTask3Intro(true);
+        break;
+      case "task4":
+        setShowTask4Intro(true);
+        break;
+      case "task5":
+        setShowTask5Intro(true);
+        break;
+      case "task6":
+        setShowTask6Intro(true);
+        break;
+      case "task7":
+        setShowTask7Intro(true);
+        break;
+      case "task8":
+        setShowTask8Intro(true);
+        break;
+      case "task9":
+        setShowTask9Intro(true);
+        break;
+      case "task10":
+        setShowTask10Intro(true);
+        break;
+    }
+
+    setLastTask(prev);
+  };
 
   // Åpne oppgaver
   const openTask1 = () => {
@@ -207,8 +303,8 @@ export default function App() {
             onOpenBufferTool={() => {
               setShowBuffer(true);
             }}
-            onOpenDiffTool={() => {}}
-            onOpenIntersectTool={() => {}}
+            onOpenDiffTool={() => setShowDifference(true)}
+            onOpenIntersectTool={() => setShowIntersect(true)}
             onOpenUnionTool={() => setShowUnion(true)}
           />
         </header>
@@ -226,6 +322,8 @@ export default function App() {
         <ClipDialog isOpen={showClip} onClose={() => setShowClip(false)} />
         <BufferDialog isOpen={showBuffer} onClose={() => setShowBuffer(false)} />
         <UnionDialog isOpen={showUnion} onClose={() => setShowUnion(false)} />
+        <IntersectDialog isOpen={showIntersect} onClose={() => setShowIntersect(false)} />
+        <DifferenceDialog isOpen={showDifference} onClose={() => setShowDifference(false)} />
 
         {/* Welcome og Tour */}
         <Welcome
@@ -248,15 +346,60 @@ export default function App() {
 
         {/* Tasks */}
         <Task1 isOpen={showTask1Intro} onClose={closeTask1} onAdvance={advanceFromTask1} />
-        <Task2 isOpen={showTask2Intro} onClose={closeTask2} onAdvance={advanceFromTask2} />
-        <Task3 isOpen={showTask3Intro} onClose={closeTask3} onAdvance={advanceFromTask3} />
-        <Task4 isOpen={showTask4Intro} onClose={closeTask4} onAdvance={advanceFromTask4} />
-        <Task5 isOpen={showTask5Intro} onClose={closeTask5} onAdvance={advanceFromTask5} />
-        <Task6 isOpen={showTask6Intro} onClose={closeTask6} onAdvance={advanceFromTask6} />
-        <Task7 isOpen={showTask7Intro} onClose={closeTask7} onAdvance={advanceFromTask7} />
-        <Task8 isOpen={showTask8Intro} onClose={closeTask8} onAdvance={advanceFromTask8} />
-        <Task9 isOpen={showTask9Intro} onClose={closeTask9} onAdvance={advanceFromTask9} />
-        <Task10 isOpen={showTask10Intro} onClose={closeTask10} onAdvance={advanceFromTask10} />
+        <Task2
+          isOpen={showTask2Intro}
+          onClose={closeTask2}
+          onBack={goBack}
+          onAdvance={advanceFromTask2}
+        />
+        <Task3
+          isOpen={showTask3Intro}
+          onClose={closeTask3}
+          onBack={goBack}
+          onAdvance={advanceFromTask3}
+        />
+        <Task4
+          isOpen={showTask4Intro}
+          onClose={closeTask4}
+          onBack={goBack}
+          onAdvance={advanceFromTask4}
+        />
+        <Task5
+          isOpen={showTask5Intro}
+          onClose={closeTask5}
+          onBack={goBack}
+          onAdvance={advanceFromTask5}
+        />
+        <Task6
+          isOpen={showTask6Intro}
+          onClose={closeTask6}
+          onBack={goBack}
+          onAdvance={advanceFromTask6}
+        />
+        <Task7
+          isOpen={showTask7Intro}
+          onClose={closeTask7}
+          onBack={goBack}
+          onAdvance={advanceFromTask7}
+        />
+        <Task8
+          isOpen={showTask8Intro}
+          onClose={closeTask8}
+          onBack={goBack}
+          onAdvance={advanceFromTask8}
+        />
+        <Task9
+          isOpen={showTask9Intro}
+          onClose={closeTask9}
+          onBack={goBack}
+          onAdvance={advanceFromTask9}
+        />
+        <Task10
+          isOpen={showTask10Intro}
+          onClose={closeTask10}
+          onBack={goBack}
+          onAdvance={advanceFromTask10}
+        />
 
         <Done isOpen={showDone} onClose={() => setShowDone(false)} onAdvance={advanceFromDone} />
       </div>

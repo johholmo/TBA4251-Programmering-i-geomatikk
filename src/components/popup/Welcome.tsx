@@ -17,10 +17,7 @@ const steps = [
   { anchorId: "tool-union", text: "Slå sammen flere datalag til ett." },
   { anchorId: "tool-diff", text: "Fjern et datalag fra et annet for å finne differansen." },
   { anchorId: "tool-clip", text: "Klipp et datalag til å passe et annet datalag." },
-  {
-    anchorId: "tool-current-task",
-    text: "Oppgaven du arbeider med for øyeblikket. ",
-  },
+  { anchorId: "tool-current-task", text: "Oppgaven du arbeider med for øyeblikket. " },
 ];
 
 export default function Welcome({ isOpen, onClose, onAfterTour, onStartTasks }: Props) {
@@ -32,7 +29,6 @@ export default function Welcome({ isOpen, onClose, onAfterTour, onStartTasks }: 
         isOpen={isOpen && !showTour} // skjul velkomstpopup mens tour vises
         onClose={onClose}
         title="Velkommen til studentbolig-analysen!"
-        highlightColor="var(--brand)"
         actions={[
           {
             label: "Lær om verktøyene",
@@ -50,13 +46,16 @@ export default function Welcome({ isOpen, onClose, onAfterTour, onStartTasks }: 
         ]}
       >
         <p>
-          Du skal nå jobbe som <b>GIS-analytiker i Trondheim</b> og finne områder som er egnet til
-          for SiT å bygge nye studentboliger. Denne gjennomgangen med oppgaver guider deg i gjennom
-          analysen steg for steg.
+          Du skal nå jobbe som <strong>GIS-analytiker</strong> og har fått i oppgave å finne egnede
+          områder der Studentsamskipnaden i Trondheim (SiT) kan bygge nye studentboliger. Gjennom
+          denne gjennomgangen vil du bruke flere GIS-verktøy og løse oppgaver som steg for steg
+          fører deg frem til de optimale områdene for en slik utbygging.
         </p>
+
         <p>
-          Hvis du vil se hvilke verktøy vi skal bruke, kan du ta en rask gjennomgang. Hvis du
-          allerede vet hva du gjør er det bare å sette i gang!
+          Ønsker du en introduksjon til verktøyene du skal bruke, kan du ta en rask omvisning.
+          Dersom du allerede er klar for å starte analysen, er det bare å hoppe rett inn i
+          oppgavene.
         </p>
       </Popup>
 

@@ -1,37 +1,37 @@
 import Popup from "./Popup";
 
-type Props = {
+type Props7 = {
   isOpen: boolean;
   onClose: () => void;
+  onBack: () => void;
   onAdvance: () => void;
 };
 
-export default function Task3({ isOpen, onClose, onAdvance }: Props) {
+export default function Task7({ isOpen, onClose, onBack, onAdvance }: Props7) {
   return (
     <Popup
       isOpen={isOpen}
       onClose={onClose}
-      title="Oppgave 7 – Tilgjengelighet til vei"
-      step={7}
-      totalSteps={10}
-      highlightColor="var(--brand)"
+      title="Oppgave 7 – Flom- og skredfaresoner"
       actions={[
-        { label: "Lukk", variant: "secondary", onClick: onClose },
-        {
-          label: "Neste oppgave",
-          variant: "primary",
-          onClick: onAdvance,
-        },
+        { label: "Forrige oppgave", variant: "secondary", onClick: onBack },
+        { label: "Neste oppgave", variant: "primary", onClick: onAdvance },
       ]}
     >
       <p>
-        For å sikre god tilgjengelighet må studentboligen ligge nær vei. Bruk{" "}
-        <b>Buffer-verktøyet</b> på <code>FKB-Veg</code> med radius <b>300 meter</b>.
+        Vi vil heller ikke bygge i eller rundt flom- eller skredfaresoner. For å være på den sikre
+        siden legger vi til en avstand på <strong>100 meter</strong> rundt disse sonene.
       </p>
 
       <p>
-        Deretter bruker du <b>Intersect</b> mellom dette bufferlaget og laget fra forrige oppgave
-        for å finne områder som både er trygge, sentrale og lett tilgjengelige.
+        Last opp datasettene <strong>Flomsoner</strong> og <strong>Skredfaresoner</strong>, og lag
+        en buffer rundt hver av dem. Slå dem deretter sammen og klipp dem til AOI. Dette kan du for
+        eksempel kalle <em>Faresoner</em>.
+      </p>
+
+      <p>
+        Fjern faresonene fra <strong>AOI_Trondheim</strong> ved hjelp av <strong>Difference</strong>
+        -verktøyet slik at vi ikke bygger i disse områdene.
       </p>
     </Popup>
   );
