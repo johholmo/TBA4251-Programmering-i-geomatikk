@@ -16,7 +16,7 @@ import intersect from "@turf/intersect";
 import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
 import booleanIntersects from "@turf/boolean-intersects";
 import { to25832 } from "../utils/reproject";
-import Popup from "./popup/Popup";
+import Popup, { type Action } from "./popup/Popup";
 
 type Props = {
   isOpen: boolean;
@@ -310,25 +310,31 @@ export default function ClipDialog({ isOpen, onClose }: Props) {
 
   if (!isOpen) return null;
 
-  // HTML
-  return (
-    <Popup
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Clip"
-      width="narrow"
-      actions={[
-        { label: "Lukk", variant: "secondary", onClick: onClose, disabled: busy },
+  const actions: Action[] = busy
+    ? []
+    : [
+        {
+          label: "Lukk",
+          variant: "secondary",
+          onClick: onClose,
+          disabled: busy,
+        },
         {
           label: "Klipp",
           variant: "primary",
           onClick: handleClip,
           disabled: busy || !maskId || selectedIds.length === 0 || noLayers,
-          loading: busy,
         },
-      ]}
-    >
-      {!busy && (
+      ];
+
+  return (
+    <Popup isOpen={isOpen} onClose={onClose} title="Clip" width="narrow" actions={actions}>
+      {busy ? (
+        <div className="upload-busy" style={{ textAlign: "center", padding: "24px 0" }}>
+          <div className="spinner" style={{ width: 48, height: 48, marginBottom: 10 }} />
+          <div style={{ fontWeight: 600 }}>Klipper…</div>
+        </div>
+      ) : (
         <div style={{ display: "grid", gap: 16 }}>
           {noLayers && (
             <div
@@ -507,7 +513,7 @@ export default function ClipDialog({ isOpen, onClose }: Props) {
                     className="clip-dropdown-scroll"
                   >
                     {candidateMaskLayers
-                      .filter((l) => !selectedIds.includes(l.id)) // kan ikke dukke opp i andre felt om det var valgt i første
+                      .filter((l) => !selectedIds.includes(l.id))
                       .map((l) => (
                         <button
                           key={l.id}
@@ -531,16 +537,16 @@ export default function ClipDialog({ isOpen, onClose }: Props) {
                   </div>
                 )}
               </div>
-            </>
-          )}
 
-          {error && (
-            <div
-              className="hint-box"
-              style={{ color: "#b91c1c", borderColor: "#fecaca", background: "#fef2f2" }}
-            >
-              {error}
-            </div>
+              {error && (
+                <div
+                  className="hint-box"
+                  style={{ color: "#b91c1c", borderColor: "#fecaca", background: "#fef2f2" }}
+                >
+                  {error}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

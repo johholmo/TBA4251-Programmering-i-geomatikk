@@ -3,7 +3,7 @@ import { useLayers } from "../context/LayersContext";
 import * as turf from "@turf/turf";
 import type { Feature, FeatureCollection, Geometry, Polygon, MultiPolygon } from "geojson";
 import { to25832 } from "../utils/reproject";
-import Popup from "./popup/Popup";
+import Popup, { type Action } from "./popup/Popup";
 
 type Props = {
   isOpen: boolean;
@@ -167,13 +167,9 @@ export default function UnionDialog({ isOpen, onClose }: Props) {
 
   if (!isOpen) return null;
 
-  return (
-    <Popup
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Union"
-      width="narrow"
-      actions={[
+  const actions: Action[] = busy
+    ? []
+    : [
         { label: "Lukk", variant: "secondary", onClick: onClose, disabled: busy },
         {
           label: "Slå sammen",
@@ -182,9 +178,18 @@ export default function UnionDialog({ isOpen, onClose }: Props) {
           disabled: busy || selectedIds.length < 2,
           loading: busy,
         },
-      ]}
-    >
-      {!hasLayers ? (
+      ];
+
+  if (!isOpen) return null;
+
+  return (
+    <Popup isOpen={isOpen} onClose={onClose} title="Union" width="narrow" actions={actions}>
+      {busy ? (
+        <div className="upload-busy" style={{ textAlign: "center", padding: "24px 0" }}>
+          <div className="spinner" style={{ width: 48, height: 48, marginBottom: 10 }} />
+          <div style={{ fontWeight: 600 }}>Slår sammen...</div>
+        </div>
+      ) : !hasLayers ? (
         <div
           style={{
             background: "#fef2f2",

@@ -4,7 +4,7 @@ import * as turf from "@turf/turf";
 import { featureCollection } from "@turf/helpers";
 import type { Feature, Geometry, FeatureCollection as FC } from "geojson";
 import { to25832 } from "../utils/reproject";
-import Popup from "./popup/Popup";
+import Popup, { type Action } from "./popup/Popup";
 
 type Props = {
   isOpen: boolean;
@@ -107,24 +107,31 @@ export default function BufferDialog({ isOpen, onClose }: Props) {
   const hasLayers = layers.length > 0;
   const selectedLayer = layers.find((l) => l.id === selectedLayerId) || null;
 
-  return (
-    <Popup
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Buffer"
-      width="narrow"
-      actions={[
-        { label: "Lukk", variant: "secondary", onClick: onClose, disabled: busy },
+  const actions: Action[] = busy
+    ? []
+    : [
+        {
+          label: "Lukk",
+          variant: "secondary",
+          onClick: onClose,
+          disabled: busy,
+        },
         {
           label: "Lag buffer",
           variant: "primary",
           onClick: handleBuffer,
           disabled: busy || !selectedLayerId || parseFloat(bufferDistance) <= 0,
-          loading: busy,
         },
-      ]}
-    >
-      {!hasLayers ? (
+      ];
+
+  return (
+    <Popup isOpen={isOpen} onClose={onClose} title="Buffer" width="narrow" actions={actions}>
+      {busy ? (
+        <div className="upload-busy" style={{ textAlign: "center", padding: "24px 0" }}>
+          <div className="spinner" style={{ width: 48, height: 48, marginBottom: 10 }} />
+          <div style={{ fontWeight: 600 }}>Lager buffer…</div>
+        </div>
+      ) : !hasLayers ? (
         <div
           style={{
             background: "#fef2f2",

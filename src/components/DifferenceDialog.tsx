@@ -5,7 +5,7 @@ import cleanCoords from "@turf/clean-coords";
 import bbox from "@turf/bbox";
 import booleanIntersects from "@turf/boolean-intersects";
 import difference from "@turf/difference";
-import Popup from "./popup/Popup";
+import Popup, { type Action } from "./popup/Popup";
 
 import { to25832 } from "../utils/reproject";
 
@@ -293,26 +293,36 @@ export default function DifferenceDialog({ isOpen, onClose }: Props) {
     }, 0);
   }
 
-  if (!isOpen) return null;
-
-  return (
-    <Popup
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Difference"
-      width="narrow"
-      actions={[
-        { label: "Lukk", variant: "secondary", onClick: onClose, disabled: busy },
+  const actions: Action[] = busy
+    ? []
+    : [
+        {
+          label: "Lukk",
+          variant: "secondary",
+          onClick: onClose,
+          disabled: busy,
+        },
         {
           label: "Utfør",
           variant: "primary",
           onClick: handleDifference,
           disabled: busy || !layerAId || !layerBId || layerAId === layerBId,
-          loading: busy,
         },
-      ]}
-    >
-      {!hasLayers ? (
+      ];
+
+  if (!isOpen) return null;
+
+  if (!isOpen) return null;
+
+  return (
+    <Popup isOpen={isOpen} onClose={onClose} title="Difference" width="narrow" actions={actions}>
+      {busy ? (
+        // Fullskjerm spinner mens difference kjører
+        <div className="upload-busy" style={{ textAlign: "center", padding: "24px 0" }}>
+          <div className="spinner" style={{ width: 48, height: 48, marginBottom: 10 }} />
+          <div style={{ fontWeight: 600 }}>Utfører difference…</div>
+        </div>
+      ) : !hasLayers ? (
         <div
           style={{
             background: "#fef2f2",

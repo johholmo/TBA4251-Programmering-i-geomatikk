@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-type Action = {
+export type Action = {
   label: string;
   disabled?: boolean;
   loading?: boolean;
