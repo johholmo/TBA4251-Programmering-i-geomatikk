@@ -17,6 +17,7 @@ const steps = [
   { anchorId: "tool-union", text: "Slå sammen flere datalag til ett." },
   { anchorId: "tool-diff", text: "Fjern et datalag fra et annet for å finne differansen." },
   { anchorId: "tool-clip", text: "Klipp et datalag til å passe et annet datalag." },
+  { anchorId: "tool-area", text: "Filtrer etter områder på en viss størrelse. " },
   { anchorId: "tool-current-task", text: "Oppgaven du arbeider med for øyeblikket. " },
 ];
 

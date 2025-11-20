@@ -2,11 +2,13 @@ import { useState } from "react";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
 import Map from "./components/Map";
+import ClipDialog from "./components/ClipDialog";
 import UploadDialog from "./components/UploadDialog";
 import BufferDialog from "./components/BufferDialog";
 import UnionDialog from "./components/UnionDialog";
 import IntersectDialog from "./components/IntersectDialog";
 import DifferenceDialog from "./components/DifferenceDialog";
+import AreaFilterDialog from "./components/AreaFilterDialog";
 import { LayersProvider } from "./context/LayersContext";
 
 import Welcome from "./components/popup/Welcome";
@@ -21,8 +23,6 @@ import Task8 from "./components/popup/Task8";
 import Task9 from "./components/popup/Task9";
 import Task10 from "./components/popup/Task10";
 import Done from "./components/popup/Done";
-
-import ClipDialog from "./components/ClipDialog";
 
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
@@ -75,6 +75,7 @@ export default function App() {
   const [showUnion, setShowUnion] = useState(false);
   const [showIntersect, setShowIntersect] = useState(false);
   const [showDifference, setShowDifference] = useState(false);
+  const [showAreaFilter, setShowAreaFilter] = useState(false);
 
   const goBack = () => {
     if (!lastTask) return;
@@ -306,6 +307,7 @@ export default function App() {
             onOpenDiffTool={() => setShowDifference(true)}
             onOpenIntersectTool={() => setShowIntersect(true)}
             onOpenUnionTool={() => setShowUnion(true)}
+            onOpenAreaFilterTool={() => setShowAreaFilter(true)}
           />
         </header>
 
@@ -324,6 +326,7 @@ export default function App() {
         <UnionDialog isOpen={showUnion} onClose={() => setShowUnion(false)} />
         <IntersectDialog isOpen={showIntersect} onClose={() => setShowIntersect(false)} />
         <DifferenceDialog isOpen={showDifference} onClose={() => setShowDifference(false)} />
+        <AreaFilterDialog isOpen={showAreaFilter} onClose={() => setShowAreaFilter(false)} />
 
         {/* Welcome og Tour */}
         <Welcome

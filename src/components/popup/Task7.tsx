@@ -12,21 +12,20 @@ export default function Task7({ isOpen, onClose, onBack, onAdvance }: Props7) {
     <Popup
       isOpen={isOpen}
       onClose={onClose}
-      title="Oppgave 7 – Flom- og skredfaresoner"
+      title="Oppgave 7 – Flomfaresoner"
       actions={[
         { label: "Forrige oppgave", variant: "secondary", onClick: onBack },
         { label: "Neste oppgave", variant: "primary", onClick: onAdvance },
       ]}
     >
       <p>
-        Vi vil heller ikke bygge i eller rundt flom- eller skredfaresoner. For å være på den sikre
-        siden legger vi til en avstand på <strong>100 meter</strong> rundt disse sonene.
+        Vi vil heller ikke bygge i eller rundt en flomfaresone. For å være på den sikre siden legger
+        vi til en avstand på <strong>100 meter</strong> rundt disse sonene.
       </p>
 
       <p>
-        Last opp datasettene <strong>Flomsoner</strong> og <strong>Skredfaresoner</strong>, og lag
-        en buffer rundt hver av dem. Slå dem deretter sammen og klipp dem til AOI. Dette kan du for
-        eksempel kalle <em>Faresoner</em>.
+        Last opp datasett <strong>Flomsoner</strong>, klipp til AOI, og lag en buffer rundt. Navngi
+        bufferlaget for eksempel <em>Faresoner</em>.
       </p>
 
       <p>

@@ -1,37 +1,32 @@
 import Popup from "./Popup";
 
-type Props = {
+type Props8 = {
   isOpen: boolean;
   onClose: () => void;
+  onBack: () => void;
   onAdvance: () => void;
 };
 
-export default function Task3({ isOpen, onClose, onAdvance }: Props) {
+export default function Task10({ isOpen, onClose, onBack, onAdvance }: Props8) {
   return (
     <Popup
       isOpen={isOpen}
       onClose={onClose}
-      title="Oppgave 10 – Samle og navngi resultatet"
-      step={10}
-      totalSteps={10}
-      highlightColor="var(--brand)"
+      title="Oppgave 10 – Store nok områder"
       actions={[
-        { label: "Lukk", variant: "secondary", onClick: onClose },
-        {
-          label: "Neste oppgave",
-          variant: "primary",
-          onClick: onAdvance,
-        },
+        { label: "Forrige oppgave", variant: "secondary", onClick: onBack },
+        { label: "Neste oppgave", variant: "primary", onClick: onAdvance },
       ]}
     >
       <p>
-        Du har nå identifisert områder som oppfyller alle kriterier: trygghet, tilgjengelighet og
-        egnet terreng.
+        Nå har du funnet alle trygge og ønskede områder, men området må jo også være stort nok til å
+        få plass til en studentbolig. SiT ønsker et sammenhengende område på minst 300 kvadratmeter
+        for å få plass til sin nye studentblokk.
       </p>
 
       <p>
-        Bruk <b>Union-verktøyet</b> for å slå sammen disse områdene til ett samlet lag. Gi laget et
-        tydelig navn, for eksempel <code>Trygge_studentområder_samlet</code>.
+        Bruk verktøyet <strong>Area Filter</strong> til å finne de sammenhengende polygonene i
+        datalaget fra oppgave 9 som er minst 300 kvadratmeter.
       </p>
     </Popup>
   );

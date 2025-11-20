@@ -8,6 +8,7 @@ type Props = {
   onOpenIntersectTool?: () => void;
   onOpenUnionTool?: () => void;
   onOpenDiffTool?: () => void;
+  onOpenAreaFilterTool?: () => void;
 };
 
 export default function Navbar({
@@ -18,6 +19,7 @@ export default function Navbar({
   onOpenDiffTool,
   onOpenIntersectTool,
   onOpenUnionTool,
+  onOpenAreaFilterTool,
 }: Props) {
   return (
     <nav className="toolbar">
@@ -33,6 +35,7 @@ export default function Navbar({
       <ToolbarButton id="tool-union" icon="➕" label="Union" onClick={onOpenUnionTool} />
       <ToolbarButton id="tool-diff" icon="➖" label="Difference" onClick={onOpenDiffTool} />
       <ToolbarButton id="tool-clip" icon="✂️" label="Clip" onClick={onOpenClipTool} />
+      <ToolbarButton id="tool-area" icon="📐" label="Area Filter" onClick={onOpenAreaFilterTool} />
 
       <div className="toolbar-spacer" />
 
