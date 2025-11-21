@@ -26,6 +26,7 @@ type Props = {
 
 export default function Clip({ isOpen, onClose }: Props) {
   const { layers, addLayer } = useLayers();
+  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [maskId, setMaskId] = useState<string>("");
@@ -60,6 +61,7 @@ export default function Clip({ isOpen, onClose }: Props) {
       setIsListOpen(false);
       setSelectedIds([]);
       setMaskId("");
+      setProgress(null);
     }
   }, [isOpen]);
 
@@ -79,163 +81,176 @@ export default function Clip({ isOpen, onClose }: Props) {
     setSelectedIds((prev) => prev.filter((x) => x !== id));
   };
 
-  // AI til hjelp for å håndtere klipping
+  // AI til hjelp for å håndtere klipping sekvensielt
   function handleClip() {
     if (!maskId || selectedIds.length === 0 || busy) return;
 
+    const maskLayer = layers.find((l) => l.id === maskId);
+    if (!maskLayer) {
+      setError("Fant ikke maskelaget.");
+      return;
+    }
+
+    // Hent alle polygon/multipolygon-masker
+    const maskFeatures = maskLayer.geojson4326.features.filter(
+      (f) => f.geometry && (f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon")
+    ) as Feature<Polygon | MultiPolygon>[];
+
+    if (maskFeatures.length === 0) {
+      setError("Maskelaget må inneholde polygon-geometri.");
+      return;
+    }
+
+    const sourceIds = [...selectedIds];
+    const total = sourceIds.length;
+
     setBusy(true);
     setError(null);
+    setProgress({ current: 0, total });
 
-    setTimeout(() => {
-      let success = false;
+    // Prosesser ett lag av gangen med setTimeout slik at UI ikke fryser
+    const processLayer = (index: number) => {
+      if (index >= total) {
+        // Ferdig med alle lag
+        setBusy(false);
+        setProgress(null);
+        setSelectedIds([]);
+        setMaskId("");
+        setIsListOpen(false);
+        setIsMaskOpen(false);
+        onClose();
+        return;
+      }
+
+      const srcId = sourceIds[index];
+      const src = layers.find((l) => l.id === srcId);
+      if (!src) {
+        setProgress({ current: index + 1, total });
+        setTimeout(() => processLayer(index + 1), 0);
+        return;
+      }
 
       try {
-        const maskLayer = layers.find((l) => l.id === maskId);
-        if (!maskLayer) throw new Error("Fant ikke maskelaget.");
+        const outFeatures4326: Feature<Geometry>[] = [];
 
-        // Get alle polygon features fra maskelag
-        const maskFeatures = maskLayer.geojson4326.features.filter(
-          (f) => f.geometry && (f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon")
-        ) as Feature<Polygon | MultiPolygon>[];
+        for (const feature of src.geojson4326.features) {
+          if (!feature.geometry) continue;
 
-        if (maskFeatures.length === 0) {
-          throw new Error("Maskelaget må inneholde polygon-geometri.");
-        }
+          const geomType = feature.geometry.type;
 
-        // For alle lag som skal bli klippet
-        for (const srcId of selectedIds) {
-          const src = layers.find((l) => l.id === srcId);
-          if (!src) continue;
+          for (const maskFeature of maskFeatures) {
+            try {
+              // Polygon klipping
+              if (geomType === "Polygon" || geomType === "MultiPolygon") {
+                const maskGeom = maskFeature.geometry as Polygon | MultiPolygon;
+                const srcGeom = feature.geometry as Polygon | MultiPolygon;
 
-          const outFeatures4326: Feature<Geometry>[] = [];
+                const maskFeat = {
+                  type: "Feature" as const,
+                  properties: {},
+                  geometry: maskGeom,
+                };
+                const srcFeat = {
+                  type: "Feature" as const,
+                  properties: feature.properties || {},
+                  geometry: srcGeom,
+                };
 
-          for (const feature of src.geojson4326.features) {
-            if (!feature.geometry) continue;
+                const hasIntersection = booleanIntersects(maskFeat as any, srcFeat as any);
+                if (!hasIntersection) continue;
 
-            const geomType = feature.geometry.type;
+                let clipped: Feature<Polygon | MultiPolygon> | null = null;
 
-            // Test intersection
-            for (const maskFeature of maskFeatures) {
-              try {
-                // Polygon klipping
-                if (geomType === "Polygon" || geomType === "MultiPolygon") {
-                  const maskGeom = maskFeature.geometry as Polygon | MultiPolygon;
-                  const srcGeom = feature.geometry as Polygon | MultiPolygon;
+                try {
+                  clipped = turfIntersect(maskFeat as any, srcFeat as any);
+                } catch {
+                  const cleanedMask = cleanCoords(maskGeom as any) as Polygon | MultiPolygon;
+                  const cleanedSrc = cleanCoords(srcGeom as any) as Polygon | MultiPolygon;
 
-                  const maskFeat = {
+                  const cleanedMaskFeat = {
                     type: "Feature" as const,
                     properties: {},
-                    geometry: maskGeom,
+                    geometry: cleanedMask,
                   };
-                  const srcFeat = {
+                  const cleanedSrcFeat = {
                     type: "Feature" as const,
                     properties: feature.properties || {},
-                    geometry: srcGeom,
+                    geometry: cleanedSrc,
                   };
-
-                  // Sjekker etter noe som helst overlapp
-                  const hasIntersection = booleanIntersects(maskFeat as any, srcFeat as any);
-                  if (!hasIntersection) {
-                    continue;
-                  }
-
-                  let clipped: Feature<Polygon | MultiPolygon> | null = null;
 
                   try {
-                    clipped = turfIntersect(maskFeat as any, srcFeat as any);
-                  } catch (err1) {
-                    const cleanedMask = cleanCoords(maskGeom as any) as Polygon | MultiPolygon;
-                    const cleanedSrc = cleanCoords(srcGeom as any) as Polygon | MultiPolygon;
-
-                    const cleanedMaskFeat = {
-                      type: "Feature" as const,
-                      properties: {},
-                      geometry: cleanedMask,
-                    };
-                    const cleanedSrcFeat = {
-                      type: "Feature" as const,
-                      properties: feature.properties || {},
-                      geometry: cleanedSrc,
-                    };
-
-                    try {
-                      clipped = turfIntersect(cleanedMaskFeat as any, cleanedSrcFeat as any);
-                    } catch (err2) {
-                      continue;
-                    }
-                  }
-
-                  if (clipped && clipped.geometry) {
-                    // Unngå duplikater
-                    const alreadyAdded = outFeatures4326.some(
-                      (f) => JSON.stringify(f.geometry) === JSON.stringify(clipped!.geometry)
-                    );
-
-                    if (!alreadyAdded) {
-                      outFeatures4326.push({
-                        type: "Feature",
-                        properties: feature.properties || {},
-                        geometry: clipped.geometry as Geometry,
-                      } as Feature<Geometry>);
-                    }
-                  }
-
-                  // Linje klipping
-                } else if (geomType === "LineString" || geomType === "MultiLineString") {
-                  const maskFeat = {
-                    type: "Feature" as const,
-                    properties: {},
-                    geometry: maskFeature.geometry,
-                  };
-
-                  const lineFeat = {
-                    type: "Feature" as const,
-                    properties: feature.properties || {},
-                    geometry: feature.geometry as LineString | MultiLineString,
-                  };
-
-                  const intersects = booleanIntersects(maskFeat as any, lineFeat as any);
-
-                  if (intersects) {
-                    const alreadyAdded = outFeatures4326.some(
-                      (f) => JSON.stringify(f.geometry) === JSON.stringify(feature.geometry)
-                    );
-
-                    if (!alreadyAdded) {
-                      outFeatures4326.push(lineFeat as Feature<Geometry>);
-                    }
-                    break;
-                  }
-
-                  // Punkt klipping
-                } else if (geomType === "Point") {
-                  const isInside = booleanPointInPolygon(
-                    feature.geometry as any,
-                    maskFeature.geometry as any
-                  );
-
-                  if (isInside) {
-                    const alreadyAdded = outFeatures4326.some(
-                      (f) => JSON.stringify(f.geometry) === JSON.stringify(feature.geometry)
-                    );
-
-                    if (!alreadyAdded) {
-                      outFeatures4326.push(feature as Feature<Geometry>);
-                    }
-                    break;
+                    clipped = turfIntersect(cleanedMaskFeat as any, cleanedSrcFeat as any);
+                  } catch {
+                    continue;
                   }
                 }
-              } catch (err) {
-                console.warn(`Error processing ${geomType} feature:`, err);
+
+                if (clipped && clipped.geometry) {
+                  const alreadyAdded = outFeatures4326.some(
+                    (f) => JSON.stringify(f.geometry) === JSON.stringify(clipped!.geometry)
+                  );
+
+                  if (!alreadyAdded) {
+                    outFeatures4326.push({
+                      type: "Feature",
+                      properties: feature.properties || {},
+                      geometry: clipped.geometry as Geometry,
+                    } as Feature<Geometry>);
+                  }
+                }
+
+                // Linje klipping
+              } else if (geomType === "LineString" || geomType === "MultiLineString") {
+                const maskFeat = {
+                  type: "Feature" as const,
+                  properties: {},
+                  geometry: maskFeature.geometry,
+                };
+
+                const lineFeat = {
+                  type: "Feature" as const,
+                  properties: feature.properties || {},
+                  geometry: feature.geometry as LineString | MultiLineString,
+                };
+
+                const intersects = booleanIntersects(maskFeat as any, lineFeat as any);
+
+                if (intersects) {
+                  const alreadyAdded = outFeatures4326.some(
+                    (f) => JSON.stringify(f.geometry) === JSON.stringify(feature.geometry)
+                  );
+
+                  if (!alreadyAdded) {
+                    outFeatures4326.push(lineFeat as Feature<Geometry>);
+                  }
+                  break;
+                }
+
+                // Punkt klipping
+              } else if (geomType === "Point") {
+                const isInside = booleanPointInPolygon(
+                  feature.geometry as any,
+                  maskFeature.geometry as any
+                );
+
+                if (isInside) {
+                  const alreadyAdded = outFeatures4326.some(
+                    (f) => JSON.stringify(f.geometry) === JSON.stringify(feature.geometry)
+                  );
+
+                  if (!alreadyAdded) {
+                    outFeatures4326.push(feature as Feature<Geometry>);
+                  }
+                  break;
+                }
               }
+            } catch (err) {
+              console.warn(`Error processing ${geomType} feature:`, err);
             }
           }
+        }
 
-          if (outFeatures4326.length === 0) {
-            console.log(`No overlap found for layer: ${src.name}`);
-            continue;
-          }
-
+        if (outFeatures4326.length > 0) {
           const outFC4326: FeatureCollection<Geometry> = {
             type: "FeatureCollection",
             features: outFeatures4326,
@@ -251,23 +266,21 @@ export default function Clip({ isOpen, onClose }: Props) {
             color: src.color,
             visible: true,
           });
+        } else {
+          console.log(`No overlap found for layer: ${src.name}`);
         }
-
-        success = true;
       } catch (e: any) {
         console.error(e);
         setError(e?.message || "Klarte ikke å klippe lagene.");
       } finally {
-        setBusy(false);
-        if (success) {
-          setSelectedIds([]);
-          setMaskId("");
-          setIsListOpen(false);
-          setIsMaskOpen(false);
-          onClose();
-        }
+        // oppdater progresjon og gå videre til neste lag
+        setProgress({ current: index + 1, total });
+        setTimeout(() => processLayer(index + 1), 0);
       }
-    }, 0);
+    };
+
+    // start første lag
+    setTimeout(() => processLayer(0), 0);
   }
 
   if (!isOpen) return null;
@@ -294,7 +307,14 @@ export default function Clip({ isOpen, onClose }: Props) {
       {busy ? (
         <div className="busy-container">
           <div className="spinner" />
-          <div className="busy-text">Klipper...</div>
+          <div className="busy-text">
+            Klipper...
+            {progress && (
+              <div style={{ fontSize: 12, marginTop: 4 }}>
+                Lag {progress.current} av {progress.total}
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         <div className="choose-layer-container">
