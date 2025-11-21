@@ -3,5 +3,5 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
-  base: "TBA4251",
+  base: "/TBA4251-Programmering-i-geomatikk/",
 });
