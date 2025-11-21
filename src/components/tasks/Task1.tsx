@@ -15,8 +15,16 @@ export default function Task1({ isOpen, onClose, onAdvance }: Props) {
       actions={[{ label: "Neste oppgave", variant: "primary", onClick: onAdvance }]}
     >
       <p>
-        Først og fremst skal vi få inn noen data i prosjektet vårt. På GitHub, i mappen{" "}
-        <strong>data</strong>, finner du alle filene du trenger til disse oppgavene.
+        Først og fremst skal vi få inn noen data i prosjektet vårt. Du finner alle datasett i
+        GitHub-repoet, i mappen{" "}
+        <a
+          href="https://github.com/johholmo/TBA4251-Programmering-i-geomatikk/tree/main/data"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <strong>data</strong>
+        </a>
+        .
       </p>
 
       <p>

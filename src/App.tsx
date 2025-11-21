@@ -318,7 +318,7 @@ export default function App() {
       <div className="app-root">
         <header className="app-header">
           <div className="brand">
-            <span className="logo-dot" aria-hidden /> Klimarisiko GIS
+            <span className="logo-dot" aria-hidden /> MyGIS
           </div>
           <Navbar
             onUploadClick={() => setShowUpload(true)}
