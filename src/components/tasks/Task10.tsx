@@ -12,26 +12,21 @@ export default function Task10({ isOpen, onClose, onBack, onAdvance }: Props10) 
     <Popup
       isOpen={isOpen}
       onClose={onClose}
-      title="Oppgave 10 – I nærheten av NTNU"
+      title="Oppgave 10 – Slå sammen trygge og ønskede områder"
       actions={[
         { label: "Forrige oppgave", variant: "secondary", onClick: onBack },
         { label: "Neste oppgave", variant: "primary", onClick: onAdvance },
       ]}
     >
-      <p>
-        Nå har vi fjernet de områdene det ikke er aktuelt å bygge på, men hva med områder vi ønsker
-        å bygge i?
-      </p>
+      <p>Nå skal du finne de områdene som både er trygge og ønsket av SiT.</p>
 
       <p>
-        SiT ønsker at studentboligene skal ligge innenfor <strong>1 kilometer</strong> fra et
-        NTNU-campus. La oss finne disse områdene!
+        Bruk <strong>Intersect</strong>-verktøyet til å finne de områdene som overlapper i lagene{" "}
+        <strong>AOI_Trondheim</strong> (etter at du har fjernet risiko i oppgave 7) og bufferen
+        rundt campusene (oppgave 8).
       </p>
 
-      <p>
-        Last opp datalaget <strong>NTNU_campuser</strong>. Bruk <strong>Buffer</strong> til å lage
-        en buffer på <strong>1000 meter</strong> rundt NTNU-campusene.
-      </p>
+      <p>Resultatet er de områdene som er både trygge og ligger sentralt i forhold til campus.</p>
     </Popup>
   );
 }

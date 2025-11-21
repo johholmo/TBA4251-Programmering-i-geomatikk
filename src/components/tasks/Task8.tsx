@@ -12,31 +12,29 @@ export default function Task8({ isOpen, onClose, onBack, onAdvance }: Props8) {
     <Popup
       isOpen={isOpen}
       onClose={onClose}
-      title="Oppgave 8 – Unngå vei"
+      title="Oppgave 8 – Unngå vei og bygninger"
       actions={[
         { label: "Forrige oppgave", variant: "secondary", onClick: onBack },
         { label: "Neste oppgave", variant: "primary", onClick: onAdvance },
       ]}
     >
       <p>
-        Veier skaper støy og utrygghet tett inntil boliger. Derfor ønsker vi å legge inn en
-        sikkerhetssone rundt veiene for å unngå bygging i nærheten av trafikkerte områder.
+        SiT må spare på midlene sine, og ønsker derfor å ikke måtte rive hverken vei eller bygninger
+        for å lage et nytt campus. I tillegg kan det være greit å ikke bygge direkte ved siden av en
+        bygning eller vei.
       </p>
 
       <p>
-        Last opp datasettet <strong>FKB-Vei</strong> og klipp det til{" "}
-        <strong> AOI_Trondheim</strong>.
+        Last opp datasettene <strong>Vei</strong> og <strong>Bygninger</strong>. Klipp dem til{" "}
+        <strong> Area of Interest</strong>, og navngi dem godt.
       </p>
 
       <p>
-        Lag deretter en buffer på <strong>30 meter</strong> rundt veiene. Gi laget et tydelig navn,
-        for eksempel <em>Vei_buffer_30m</em>.
+        Lag deretter en buffer på <strong>30 meter</strong> rundt veiene, og en buffer på{" "}
+        <strong>20 meter</strong> fra bygninger.
       </p>
 
-      <p>
-        Bruk <strong>Difference</strong>-verktøyet for å fjerne veisonen fra{" "}
-        <strong> det aktuelle analyseområdet</strong>.
-      </p>
+      <p>Bruk Difference-verktøyet for å fjerne bufferene fra AOI_Trondheim.</p>
     </Popup>
   );
 }

@@ -12,31 +12,25 @@ export default function Task9({ isOpen, onClose, onBack, onAdvance }: Props9) {
     <Popup
       isOpen={isOpen}
       onClose={onClose}
-      title="Oppgave 9 – Unngå bygninger"
+      title="Oppgave 9 – I nærheten av NTNU"
       actions={[
         { label: "Forrige oppgave", variant: "secondary", onClick: onBack },
         { label: "Neste oppgave", variant: "primary", onClick: onAdvance },
       ]}
     >
       <p>
-        For å unngå konflikt med eksisterende bebyggelse, må vi fjerne både selve bygningene og en
-        sone rundt dem. Dette sikrer at områdene vi velger faktisk er tilgjengelige for ny
-        utvikling.
+        Nå har vi fjernet de områdene det ikke er aktuelt å bygge på, men hva med områder vi ønsker
+        å bygge i?
       </p>
 
       <p>
-        Last opp datasettet <strong>FKB-Bygning</strong> og klipp det til{" "}
-        <strong> AOI_Trondheim</strong>.
+        SiT ønsker at studentboligene skal ligge innenfor <strong>1 kilometer</strong> fra et
+        NTNU-campus. La oss finne disse områdene!
       </p>
 
       <p>
-        Lag en buffer på <strong>10 meter</strong> rundt bygningene. Gi laget et passende navn, for
-        eksempel <em>Bygning_buffer_10m</em>.
-      </p>
-
-      <p>
-        Bruk <strong>Difference</strong>-verktøyet for å fjerne bygninger og bufferen deres fra{" "}
-        <strong> det aktuelle analyseområdet</strong>.
+        Last opp datalaget <strong>NTNU_campuser</strong>. Bruk <strong>Buffer</strong> til å lage
+        en buffer på <strong>1000 meter</strong> rundt NTNU-campusene.
       </p>
     </Popup>
   );

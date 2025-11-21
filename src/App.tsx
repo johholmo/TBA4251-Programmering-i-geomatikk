@@ -23,7 +23,6 @@ import Task8 from "./components/tasks/Task8";
 import Task9 from "./components/tasks/Task9";
 import Task10 from "./components/tasks/Task10";
 import Task11 from "./components/tasks/Task11";
-import Task12 from "./components/tasks/Task12";
 import Done from "./components/tasks/Done";
 
 import "leaflet/dist/leaflet.css";
@@ -41,7 +40,6 @@ type TaskKey =
   | "task9"
   | "task10"
   | "task11"
-  | "task12"
   | "done"
   | null;
 
@@ -57,13 +55,12 @@ const taskOrder: TaskKey[] = [
   "task9",
   "task10",
   "task11",
-  "task12",
 ];
 
 export default function App() {
   const [resetKey, setResetKey] = useState(0);
   const [showWelcome, setShowWelcome] = useState(true);
-  const [showTour, setShowTour] = useState(false);
+  const [, setShowTour] = useState(false);
   const [showTask1Intro, setShowTask1Intro] = useState(false);
   const [showTask2Intro, setShowTask2Intro] = useState(false);
   const [showTask3Intro, setShowTask3Intro] = useState(false);
@@ -75,7 +72,6 @@ export default function App() {
   const [showTask9Intro, setShowTask9Intro] = useState(false);
   const [showTask10Intro, setShowTask10Intro] = useState(false);
   const [showTask11Intro, setShowTask11Intro] = useState(false);
-  const [showTask12Intro, setShowTask12Intro] = useState(false);
   const [lastTask, setLastTask] = useState<TaskKey>(null);
   const [showDone, setShowDone] = useState(false);
 
@@ -86,7 +82,6 @@ export default function App() {
   const [showIntersect, setShowIntersect] = useState(false);
   const [showDifference, setShowDifference] = useState(false);
   const [showAreaFilter, setShowAreaFilter] = useState(false);
-  const [showSlope, setShowSlope] = useState(false);
 
   const goBack = () => {
     if (!lastTask) return;
@@ -131,9 +126,6 @@ export default function App() {
       case "task11":
         setShowTask11Intro(false);
         break;
-      case "task12":
-        setShowTask12Intro(false);
-        break;
     }
 
     // Åpne forrige
@@ -170,9 +162,6 @@ export default function App() {
         break;
       case "task11":
         setShowTask11Intro(true);
-        break;
-      case "task12":
-        setShowTask12Intro(true);
         break;
     }
 
@@ -224,10 +213,6 @@ export default function App() {
     setShowTask10Intro(true);
     setLastTask("task11");
   };
-  const openTask12 = () => {
-    setShowTask10Intro(true);
-    setLastTask("task12");
-  };
 
   // Lukke oppgaver
   const closeTask1 = () => setShowTask1Intro(false);
@@ -241,9 +226,6 @@ export default function App() {
   const closeTask9 = () => setShowTask9Intro(false);
   const closeTask10 = () => setShowTask10Intro(false);
   const closeTask11 = () => setShowTask11Intro(false);
-  const closeTask12 = () => setShowTask12Intro(false);
-
-  const closeWelcome = () => setShowWelcome(false);
 
   // Videre til neste oppgave
   const advanceFromTask1 = () => {
@@ -288,10 +270,6 @@ export default function App() {
   };
   const advanceFromTask11 = () => {
     setShowTask11Intro(false);
-    openTask12();
-  };
-  const advanceFromTask12 = () => {
-    setShowTask12Intro(false);
     setShowDone(true);
     setLastTask("done");
   };
@@ -328,8 +306,6 @@ export default function App() {
         return openTask10();
       case "task11":
         return openTask11();
-      case "task12":
-        return openTask12();
       case "done":
         return setShowDone(true);
       default:
@@ -455,12 +431,6 @@ export default function App() {
           onClose={closeTask11}
           onBack={goBack}
           onAdvance={advanceFromTask11}
-        />
-        <Task12
-          isOpen={showTask12Intro}
-          onClose={closeTask12}
-          onBack={goBack}
-          onAdvance={advanceFromTask12}
         />
 
         <Done isOpen={showDone} onClose={() => setShowDone(false)} onAdvance={advanceFromDone} />

@@ -12,21 +12,22 @@ export default function Task11({ isOpen, onClose, onBack, onAdvance }: Props11) 
     <Popup
       isOpen={isOpen}
       onClose={onClose}
-      title="Oppgave 11 – Slå sammen trygge og ønskede områder"
+      title="Oppgave 11 – Store nok områder"
       actions={[
         { label: "Forrige oppgave", variant: "secondary", onClick: onBack },
         { label: "Neste oppgave", variant: "primary", onClick: onAdvance },
       ]}
     >
-      <p>Nå skal du finne de områdene som både er trygge og ønsket av SiT.</p>
-
       <p>
-        Bruk <strong>Intersect</strong>-verktøyet til å finne de områdene som overlapper i lagene{" "}
-        <strong>AOI_Trondheim</strong> (etter at du har fjernet risiko i oppgave 7) og bufferen
-        rundt campusene (oppgave 8).
+        Nå har du funnet alle trygge og ønskede områder, men området må jo også være stort nok til å
+        få plass til en studentbolig. SiT ønsker et sammenhengende område på minst 300 kvadratmeter
+        for å få plass til sin nye studentblokk.
       </p>
 
-      <p>Resultatet er de områdene som er både trygge og ligger sentralt i forhold til campus.</p>
+      <p>
+        Bruk verktøyet <strong>Area Filter</strong> til å finne de sammenhengende polygonene i
+        datalaget fra oppgave 10 som er minst 300 kvadratmeter.
+      </p>
     </Popup>
   );
 }
