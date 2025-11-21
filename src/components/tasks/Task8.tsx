@@ -12,25 +12,30 @@ export default function Task8({ isOpen, onClose, onBack, onAdvance }: Props8) {
     <Popup
       isOpen={isOpen}
       onClose={onClose}
-      title="Oppgave 8 – I nærheten av NTNU"
+      title="Oppgave 8 – Unngå vei"
       actions={[
         { label: "Forrige oppgave", variant: "secondary", onClick: onBack },
         { label: "Neste oppgave", variant: "primary", onClick: onAdvance },
       ]}
     >
       <p>
-        Nå har vi fjernet de områdene det ikke er aktuelt å bygge på, men hva med områder vi ønsker
-        å bygge i?
+        Veier skaper støy og utrygghet tett inntil boliger. Derfor ønsker vi å legge inn en
+        sikkerhetssone rundt veiene for å unngå bygging i nærheten av trafikkerte områder.
       </p>
 
       <p>
-        SiT ønsker at studentboligene skal ligge innenfor <strong>1 kilometer</strong> fra et
-        NTNU-campus. La oss finne disse områdene!
+        Last opp datasettet <strong>FKB-Vei</strong> og klipp det til{" "}
+        <strong> AOI_Trondheim</strong>.
       </p>
 
       <p>
-        Last opp datalaget <strong>NTNU_campuser</strong>. Bruk <strong>Buffer</strong> til å lage
-        en buffer på <strong>1000 meter</strong> rundt NTNU-campusene.
+        Lag deretter en buffer på <strong>30 meter</strong> rundt veiene. Gi laget et tydelig navn,
+        for eksempel <em>Vei_buffer_30m</em>.
+      </p>
+
+      <p>
+        Bruk <strong>Difference</strong>-verktøyet for å fjerne veisonen fra{" "}
+        <strong> det aktuelle analyseområdet</strong>.
       </p>
     </Popup>
   );

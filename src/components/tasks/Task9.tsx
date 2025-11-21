@@ -12,21 +12,32 @@ export default function Task9({ isOpen, onClose, onBack, onAdvance }: Props9) {
     <Popup
       isOpen={isOpen}
       onClose={onClose}
-      title="Oppgave 9 – Slå sammen trygge og ønskede områder"
+      title="Oppgave 9 – Unngå bygninger"
       actions={[
         { label: "Forrige oppgave", variant: "secondary", onClick: onBack },
         { label: "Neste oppgave", variant: "primary", onClick: onAdvance },
       ]}
     >
-      <p>Nå skal du finne de områdene som både er trygge og ønsket av SiT.</p>
-
       <p>
-        Bruk <strong>Intersect</strong>-verktøyet til å finne de områdene som overlapper i lagene{" "}
-        <strong>AOI_Trondheim</strong> (etter at du har fjernet risiko i oppgave 7) og bufferen
-        rundt campusene (oppgave 8).
+        For å unngå konflikt med eksisterende bebyggelse, må vi fjerne både selve bygningene og en
+        sone rundt dem. Dette sikrer at områdene vi velger faktisk er tilgjengelige for ny
+        utvikling.
       </p>
 
-      <p>Resultatet er de områdene som er både trygge og ligger sentralt i forhold til campus.</p>
+      <p>
+        Last opp datasettet <strong>FKB-Bygning</strong> og klipp det til{" "}
+        <strong> AOI_Trondheim</strong>.
+      </p>
+
+      <p>
+        Lag en buffer på <strong>10 meter</strong> rundt bygningene. Gi laget et passende navn, for
+        eksempel <em>Bygning_buffer_10m</em>.
+      </p>
+
+      <p>
+        Bruk <strong>Difference</strong>-verktøyet for å fjerne bygninger og bufferen deres fra{" "}
+        <strong> det aktuelle analyseområdet</strong>.
+      </p>
     </Popup>
   );
 }
