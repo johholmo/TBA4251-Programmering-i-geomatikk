@@ -1,68 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { useLayers } from "../context/LayersContext";
+import { useLayers } from "../../context/LayersContext";
 import * as turf from "@turf/turf";
 import type { Feature, FeatureCollection, Geometry, Polygon, MultiPolygon } from "geojson";
-import { to25832 } from "../utils/reproject";
-import Popup, { type Action } from "./popup/Popup";
+import { to25832 } from "../../utils/reproject";
+import Popup, { type Action } from "../popup/Popup";
+import { isPoly, unionPolygons, explodeToPolygons } from "../../utils/geoTools";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
 };
-
-function isPoly(g: Geometry | null | undefined): g is Polygon | MultiPolygon {
-  return !!g && (g.type === "Polygon" || g.type === "MultiPolygon");
-}
-
-// samme som i Differnce og clip
-function unionPolygons(
-  features: Feature<Polygon | MultiPolygon>[]
-): Feature<Polygon | MultiPolygon> | null {
-  if (features.length === 0) return null;
-  if (features.length === 1) return features[0];
-
-  const fn = (turf as any).union;
-  const fc: FeatureCollection<Polygon | MultiPolygon> = {
-    type: "FeatureCollection",
-    features,
-  };
-
-  try {
-    return fn(fc) as Feature<Polygon | MultiPolygon> | null;
-  } catch {
-    let acc: Feature<Polygon | MultiPolygon> | null = features[0];
-    for (let i = 1; i < features.length; i++) {
-      const next = features[i];
-      try {
-        const u = fn(acc as any, next as any) as Feature<Polygon | MultiPolygon> | null;
-        if (u) acc = u;
-      } catch {}
-    }
-    return acc;
-  }
-}
-
-// splitter MultiPolygon til en Feature per sammenhengende område
-function explodeToPolygons(feat: Feature<Polygon | MultiPolygon>): Feature<Polygon>[] {
-  const out: Feature<Polygon>[] = [];
-  if (!feat.geometry) return out;
-
-  if (feat.geometry.type === "Polygon") {
-    out.push(feat as Feature<Polygon>);
-  } else if (feat.geometry.type === "MultiPolygon") {
-    for (const coords of feat.geometry.coordinates) {
-      out.push({
-        type: "Feature",
-        properties: { ...(feat.properties || {}) },
-        geometry: {
-          type: "Polygon",
-          coordinates: coords,
-        },
-      });
-    }
-  }
-  return out;
-}
 
 // finner arealer større enn minAreal
 function findAreas(
@@ -117,7 +64,7 @@ function findAreas(
   };
 }
 
-export default function AreaFilterDialog({ isOpen, onClose }: Props) {
+export default function AreaFilter({ isOpen, onClose }: Props) {
   const { layers, addLayer } = useLayers();
 
   const [selectedLayerId, setSelectedLayerId] = useState("");
@@ -224,73 +171,37 @@ export default function AreaFilterDialog({ isOpen, onClose }: Props) {
       actions={actions}
     >
       {busy ? (
-        <div className="upload-busy" style={{ textAlign: "center", padding: "24px 0" }}>
-          <div className="spinner" style={{ width: 48, height: 48, marginBottom: 10 }} />
-          <div style={{ fontWeight: 600 }}>Finner områder…</div>
+        <div className="busy-container">
+          <div className="spinner" />
+          <div className="busy-text">Finner områder...</div>
         </div>
       ) : !hasLayers ? (
-        <div
-          style={{
-            background: "#fef2f2",
-            border: "1px solid #fecaca",
-            borderRadius: 8,
-            color: "#b91c1c",
-            padding: "10px 12px",
-            fontSize: 14,
-            textAlign: "center",
-          }}
-        >
+        <div className="warning-message">
           Du må ha minst ett lag med polygon-geometrier for å bruke dette verktøyet.
         </div>
       ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <div style={{ fontWeight: 600 }}>Velg polygonlag</div>
-
-          <div>
-            <div style={{ position: "relative" }} ref={listRef}>
+        <div className="choose-layer-container">
+          <div className="field-group">
+            <div className="choose-layer-text">Velg polygonlag</div>
+            <div className="dropdown" ref={listRef}>
               <button
                 type="button"
-                onClick={() => setIsListOpen((x) => !x)}
+                className="dropdown-toggle"
                 style={{
-                  width: "100%",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "8px 10px",
-                  borderRadius: isListOpen ? "8px 8px 0 0" : 8,
-                  border: "1px solid var(--border)",
-                  background: "#fff",
-                  cursor: "pointer",
+                  borderRadius: isListOpen ? "8px 8px 0 0" : "8px",
                 }}
+                onClick={() => setIsListOpen((x) => !x)}
               >
-                <span style={{ fontSize: 14 }}>
+                <span className="dropdown-text">
                   {selectedLayer ? selectedLayer.name : "Velg lag…"}
                 </span>
-                <span aria-hidden style={{ fontSize: 12 }}>
+                <span aria-hidden className="dropdown-hidden">
                   ▾
                 </span>
               </button>
 
               {isListOpen && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    right: 0,
-                    background: "#fff",
-                    border: "1px solid var(--border)",
-                    borderTop: "none",
-                    borderRadius: "0 0 8px 8px",
-                    boxShadow: "0 14px 30px rgba(0,0,0,0.06)",
-                    maxHeight: 260,
-                    overflowY: "auto",
-                    zIndex: 9999,
-                    scrollbarWidth: "none",
-                  }}
-                  className="clip-dropdown-scroll"
-                >
+                <div className="clip-dropdown-scroll">
                   {polygonLayers.map((l) => (
                     <button
                       key={l.id}
@@ -298,7 +209,7 @@ export default function AreaFilterDialog({ isOpen, onClose }: Props) {
                         setSelectedLayerId(l.id);
                         setIsListOpen(false);
                       }}
-                      className="dialog-options"
+                      className="popup-buttons"
                     >
                       <span
                         style={{
@@ -317,36 +228,18 @@ export default function AreaFilterDialog({ isOpen, onClose }: Props) {
           </div>
 
           <div>
-            <label style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
-              Minimum areal (m²)
-            </label>
+            <label className="choose-layer-text">Minimum areal (m²)</label>
             <input
               type="number"
               min={1}
               step={1}
               value={minArea}
               onChange={(e) => setMinArea(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "7px 10px",
-                borderRadius: 8,
-                border: "1px solid var(--border)",
-              }}
+              className="input-number"
             />
           </div>
 
-          {error && (
-            <div
-              className="hint-box"
-              style={{
-                color: "#b91c1c",
-                borderColor: "#fecaca",
-                background: "#fef2f2",
-              }}
-            >
-              {error}
-            </div>
-          )}
+          {error && <div className="error-message">{error}</div>}
         </div>
       )}
     </Popup>

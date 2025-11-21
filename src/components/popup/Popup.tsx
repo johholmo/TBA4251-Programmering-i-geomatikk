@@ -18,7 +18,7 @@ type Props = {
 };
 
 export default function Popup({ isOpen, onClose, title, actions = [], children, width }: Props) {
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -34,7 +34,7 @@ export default function Popup({ isOpen, onClose, title, actions = [], children, 
   return (
     <div
       className="modal-overlay"
-      role="dialog"
+      role="popup"
       aria-modal="true"
       aria-labelledby="modal-title"
       onMouseDown={(e) => {
@@ -42,8 +42,8 @@ export default function Popup({ isOpen, onClose, title, actions = [], children, 
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className={`modal ${width === "narrow" ? "modal--narrow" : ""}`} ref={dialogRef}>
-        <div className="modal-header" style={{ background: "var(--brand)" }}>
+      <div className={`modal ${width === "narrow" ? "modal--narrow" : ""}`} ref={popupRef}>
+        <div className="modal-header">
           <h2 className="modal-title">{title}</h2>
 
           <button className="modal-close" onClick={onClose} aria-label="Lukk">

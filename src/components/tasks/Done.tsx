@@ -1,4 +1,4 @@
-import Popup from "./Popup";
+import Popup from "../popup/Popup";
 
 export default function Done({
   isOpen,

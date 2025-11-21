@@ -1,4 +1,4 @@
-import Popup from "./Popup";
+import Popup from "../popup/Popup";
 
 type Props3 = {
   isOpen: boolean;

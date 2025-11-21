@@ -1,4 +1,4 @@
-import Popup from "./Popup";
+import Popup from "../popup/Popup";
 
 type Props7 = {
   isOpen: boolean;
@@ -24,8 +24,8 @@ export default function Task7({ isOpen, onClose, onBack, onAdvance }: Props7) {
       </p>
 
       <p>
-        Last opp datasett <strong>Flomsoner</strong>, klipp til AOI, og lag en buffer rundt. Navngi
-        bufferlaget for eksempel <em>Faresoner</em>.
+        Last opp datasett <strong>Flomsoner</strong>, klipp til AOI, og lag en buffer på 100 meter
+        rundt. Navngi bufferlaget for eksempel <em>Faresoner</em>.
       </p>
 
       <p>

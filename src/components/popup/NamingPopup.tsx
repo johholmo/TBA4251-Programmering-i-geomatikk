@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Popup from "./Popup";
+import Popup from "../popup/Popup";
 
 type Props = {
   isOpen: boolean;
@@ -46,19 +46,14 @@ export default function Naming({
         },
       ]}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <label style={{ fontWeight: 500 }}>{label}</label>
+      <div className="naming-popup">
+        <label className="naming-label">{label}</label>
         <input
           type="text"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder="Eks: Area of Interest"
-          style={{
-            padding: 8,
-            borderRadius: 6,
-            border: "1px solid var(--border)",
-            fontSize: "1rem",
-          }}
+          className="naming-input"
         />
       </div>
     </Popup>

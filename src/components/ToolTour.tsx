@@ -108,7 +108,7 @@ export default function Tour({ open, steps, onComplete }: Props) {
         className={`tour-coach ${pos.placement === "above" ? "is-above" : "is-below"}`}
         style={{ top: pos.top, left: pos.left }}
         ref={coachRef}
-        role="dialog"
+        role="popup"
         aria-live="polite"
         onClick={advance}
       >

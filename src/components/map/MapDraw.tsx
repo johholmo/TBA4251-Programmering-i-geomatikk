@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import L from "leaflet";
 import "leaflet-draw";
-import { useLayers } from "../context/LayersContext";
-import { to25832 } from "../utils/reproject";
-import Naming from "./popup/Naming";
+import { useLayers } from "../../context/LayersContext";
+import { to25832 } from "../../utils/reproject";
+import Naming from "../popup/NamingPopup";
 
 declare module "leaflet" {
   interface Map {

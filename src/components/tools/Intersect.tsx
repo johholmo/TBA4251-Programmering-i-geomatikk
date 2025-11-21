@@ -1,23 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import { useLayers } from "../context/LayersContext";
+import { useLayers } from "../../context/LayersContext";
 import type { Feature, FeatureCollection, Geometry, Polygon, MultiPolygon } from "geojson";
 import cleanCoords from "@turf/clean-coords";
 import bbox from "@turf/bbox";
 import intersect from "@turf/intersect";
 import booleanIntersects from "@turf/boolean-intersects";
-import { to25832 } from "../utils/reproject";
-import Popup, { type Action } from "./popup/Popup";
+import { to25832 } from "../../utils/reproject";
+import Popup, { type Action } from "../popup/Popup";
+import { isPoly } from "../../utils/geoTools";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
 };
 
-function isPoly(g: Geometry | null | undefined): g is Polygon | MultiPolygon {
-  return !!g && (g.type === "Polygon" || g.type === "MultiPolygon");
-}
-
-// Wrapper med samme logikk som i ClipDialog
+// Wrapper med samme logikk som i Clip
 function turfIntersect(
   a: Feature<Polygon | MultiPolygon> | Polygon | MultiPolygon,
   b: Feature<Polygon | MultiPolygon> | Polygon | MultiPolygon
@@ -54,7 +51,7 @@ function turfIntersect(
   }
 }
 
-export default function IntersectDialog({ isOpen, onClose }: Props) {
+export default function Intersect({ isOpen, onClose }: Props) {
   const { layers, addLayer } = useLayers();
   const [layerAId, setLayerAId] = useState<string>("");
   const [layerBId, setLayerBId] = useState<string>("");
@@ -85,7 +82,7 @@ export default function IntersectDialog({ isOpen, onClose }: Props) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isListAOpen, isListBOpen]);
 
-  // reset når dialogen lukkes
+  // reset når popupen lukkes
   useEffect(() => {
     if (!isOpen) {
       setLayerAId("");
@@ -257,76 +254,40 @@ export default function IntersectDialog({ isOpen, onClose }: Props) {
   return (
     <Popup isOpen={isOpen} onClose={onClose} title="Intersect" width="narrow" actions={actions}>
       {busy ? (
-        <div className="upload-busy" style={{ textAlign: "center", padding: "24px 0" }}>
-          <div className="spinner" style={{ width: 48, height: 48, marginBottom: 10 }} />
-          <div style={{ fontWeight: 600 }}>Beregner overlapp…</div>
+        <div className="busy-container">
+          <div className="spinner" />
+          <div className="busy-text">Beregner overlapp…</div>
         </div>
       ) : !hasLayers ? (
-        <div
-          style={{
-            background: "#fef2f2",
-            border: "1px solid #fecaca",
-            borderRadius: 8,
-            color: "#b91c1c",
-            padding: "10px 12px",
-            fontSize: 14,
-            textAlign: "center",
-          }}
-        >
+        <div className="warning-message">
           Du må ha minst to lag med polygon-geometrier for å bruke intersect.
         </div>
       ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <div style={{ fontWeight: 600 }}>Velg to polygon-lag</div>
-
-          <div>
-            <div style={{ fontSize: 13, marginBottom: 4 }}>Lag A</div>
-            <div style={{ position: "relative" }} ref={listARef}>
+        <div className="choose-layer-container">
+          <div className="field-group">
+            <div className="choose-layer-text">Velg to polygon-lag</div>
+            <div className="choose-layer-text">Lag A</div>
+            <div className="dropdown" ref={listARef}>
               <button
                 type="button"
-                onClick={() => setIsListAOpen((x) => !x)}
+                className="dropdown-toggle"
                 style={{
-                  width: "100%",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "8px 10px",
-                  borderRadius: isListAOpen ? "8px 8px 0 0" : 8,
-                  border: "1px solid var(--border)",
-                  background: "#fff",
-                  cursor: "pointer",
+                  borderRadius: isListAOpen ? "8px 8px 0 0" : "8px",
                 }}
+                onClick={() => setIsListAOpen((x) => !x)}
               >
-                <span style={{ fontSize: 14 }}>
+                <span className="dropdown-text">
                   {layerAId
-                    ? polygonLayers.find((l) => l.id === layerAId)?.name ?? "Velg lag A…"
+                    ? (polygonLayers.find((l) => l.id === layerAId)?.name ?? "Velg lag A…")
                     : "Velg lag A…"}
                 </span>
-                <span aria-hidden style={{ fontSize: 12 }}>
+                <span area-hidden className="dropdown-hidden">
                   ▾
                 </span>
               </button>
 
               {isListAOpen && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    right: 0,
-                    background: "#fff",
-                    border: "1px solid var(--border)",
-                    borderTop: "none",
-                    borderRadius: "0 0 8px 8px",
-                    boxShadow: "0 14px 30px rgba(0,0,0,0.06)",
-                    maxHeight: 260,
-                    overflowY: "auto",
-                    zIndex: 9999,
-                    scrollbarWidth: "none",
-                  }}
-                  className="clip-dropdown-scroll"
-                >
+                <div className="clip-dropdown-scroll">
                   {polygonLayers.map((l) => (
                     <button
                       key={l.id}
@@ -335,7 +296,7 @@ export default function IntersectDialog({ isOpen, onClose }: Props) {
                         if (layerBId === l.id) setLayerBId("");
                         setIsListAOpen(false);
                       }}
-                      className="dialog-options"
+                      className="popup-buttons"
                     >
                       <span
                         style={{
@@ -354,53 +315,28 @@ export default function IntersectDialog({ isOpen, onClose }: Props) {
           </div>
 
           <div>
-            <div style={{ fontSize: 13, marginBottom: 4 }}>Lag B</div>
-            <div style={{ position: "relative" }} ref={listBRef}>
+            <div className="choose-layer-text">Lag B</div>
+            <div className="dropdown" ref={listBRef}>
               <button
                 type="button"
-                onClick={() => setIsListBOpen((x) => !x)}
+                className="dropdown-toggle"
                 style={{
-                  width: "100%",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "8px 10px",
-                  borderRadius: isListBOpen ? "8px 8px 0 0" : 8,
-                  border: "1px solid var(--border)",
-                  background: "#fff",
-                  cursor: "pointer",
+                  borderRadius: isListBOpen ? "8px 8px 0 0" : "8px",
                 }}
+                onClick={() => setIsListBOpen((x) => !x)}
               >
-                <span style={{ fontSize: 14 }}>
+                <span className="dropdown-text">
                   {layerBId
-                    ? polygonLayers.find((l) => l.id === layerBId)?.name ?? "Velg lag B…"
+                    ? (polygonLayers.find((l) => l.id === layerBId)?.name ?? "Velg lag B…")
                     : "Velg lag B…"}
                 </span>
-                <span aria-hidden style={{ fontSize: 12 }}>
+                <span area-hidden className="dropdown-hidden">
                   ▾
                 </span>
               </button>
 
               {isListBOpen && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    right: 0,
-                    background: "#fff",
-                    border: "1px solid var(--border)",
-                    borderTop: "none",
-                    borderRadius: "0 0 8px 8px",
-                    boxShadow: "0 14px 30px rgba(0,0,0,0.06)",
-                    maxHeight: 260,
-                    overflowY: "auto",
-                    zIndex: 9999,
-                    scrollbarWidth: "none",
-                  }}
-                  className="clip-dropdown-scroll"
-                >
+                <div className="clip-dropdown-scroll">
                   {polygonLayers
                     .filter((l) => l.id !== layerAId)
                     .map((l) => (
@@ -410,7 +346,7 @@ export default function IntersectDialog({ isOpen, onClose }: Props) {
                           setLayerBId(l.id);
                           setIsListBOpen(false);
                         }}
-                        className="dialog-options"
+                        className="popup-buttons"
                       >
                         <span
                           style={{
@@ -428,18 +364,7 @@ export default function IntersectDialog({ isOpen, onClose }: Props) {
             </div>
           </div>
 
-          {error && (
-            <div
-              className="hint-box"
-              style={{
-                color: "#b91c1c",
-                borderColor: "#fecaca",
-                background: "#fef2f2",
-              }}
-            >
-              {error}
-            </div>
-          )}
+          {error && <div className="error-message">{error}</div>}
         </div>
       )}
     </Popup>

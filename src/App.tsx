@@ -1,28 +1,28 @@
 import { useState } from "react";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
-import Map from "./components/Map";
-import ClipDialog from "./components/ClipDialog";
-import UploadDialog from "./components/UploadDialog";
-import BufferDialog from "./components/BufferDialog";
-import UnionDialog from "./components/UnionDialog";
-import IntersectDialog from "./components/IntersectDialog";
-import DifferenceDialog from "./components/DifferenceDialog";
-import AreaFilterDialog from "./components/AreaFilterDialog";
+import Map from "./components/map/Map";
+import Clip from "./components/tools/Clip";
+import Upload from "./components/tools/Upload";
+import Buffer from "./components/tools/Buffer";
+import Union from "./components/tools/Union";
+import Intersect from "./components/tools/Intersect";
+import Difference from "./components/tools/Difference";
+import AreaFilter from "./components/tools/AreaFilter";
 import { LayersProvider } from "./context/LayersContext";
 
-import Welcome from "./components/popup/Welcome";
-import Task1 from "./components/popup/Task1";
-import Task2 from "./components/popup/Task2";
-import Task3 from "./components/popup/Task3";
-import Task4 from "./components/popup/Task4";
-import Task5 from "./components/popup/Task5";
-import Task6 from "./components/popup/Task6";
-import Task7 from "./components/popup/Task7";
-import Task8 from "./components/popup/Task8";
-import Task9 from "./components/popup/Task9";
-import Task10 from "./components/popup/Task10";
-import Done from "./components/popup/Done";
+import Welcome from "./components/tasks/Welcome";
+import Task1 from "./components/tasks/Task1";
+import Task2 from "./components/tasks/Task2";
+import Task3 from "./components/tasks/Task3";
+import Task4 from "./components/tasks/Task4";
+import Task5 from "./components/tasks/Task5";
+import Task6 from "./components/tasks/Task6";
+import Task7 from "./components/tasks/Task7";
+import Task8 from "./components/tasks/Task8";
+import Task9 from "./components/tasks/Task9";
+import Task10 from "./components/tasks/Task10";
+import Done from "./components/tasks/Done";
 
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
@@ -319,14 +319,14 @@ export default function App() {
           <Map />
         </main>
 
-        {/* Dialoger / Popups */}
-        <UploadDialog isOpen={showUpload} onClose={() => setShowUpload(false)} />
-        <ClipDialog isOpen={showClip} onClose={() => setShowClip(false)} />
-        <BufferDialog isOpen={showBuffer} onClose={() => setShowBuffer(false)} />
-        <UnionDialog isOpen={showUnion} onClose={() => setShowUnion(false)} />
-        <IntersectDialog isOpen={showIntersect} onClose={() => setShowIntersect(false)} />
-        <DifferenceDialog isOpen={showDifference} onClose={() => setShowDifference(false)} />
-        <AreaFilterDialog isOpen={showAreaFilter} onClose={() => setShowAreaFilter(false)} />
+        {/* Popups for verktøy*/}
+        <Upload isOpen={showUpload} onClose={() => setShowUpload(false)} />
+        <Clip isOpen={showClip} onClose={() => setShowClip(false)} />
+        <Buffer isOpen={showBuffer} onClose={() => setShowBuffer(false)} />
+        <Union isOpen={showUnion} onClose={() => setShowUnion(false)} />
+        <Intersect isOpen={showIntersect} onClose={() => setShowIntersect(false)} />
+        <Difference isOpen={showDifference} onClose={() => setShowDifference(false)} />
+        <AreaFilter isOpen={showAreaFilter} onClose={() => setShowAreaFilter(false)} />
 
         {/* Welcome og Tour */}
         <Welcome

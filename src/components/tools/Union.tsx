@@ -1,20 +1,18 @@
 import { useEffect, useRef, useState } from "react";
-import { useLayers } from "../context/LayersContext";
+import { useLayers } from "../../context/LayersContext";
 import * as turf from "@turf/turf";
 import type { Feature, FeatureCollection, Geometry, Polygon, MultiPolygon } from "geojson";
-import { to25832 } from "../utils/reproject";
-import Popup, { type Action } from "./popup/Popup";
+import { to25832 } from "../../utils/reproject";
+import Popup, { type Action } from "../popup/Popup";
+import { isPoly } from "../../utils/geoTools";
+import { toTransparent } from "../../utils/commonFunctions";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
 };
 
-function isPoly(g: Geometry | null | undefined): g is Polygon | MultiPolygon {
-  return !!g && (g.type === "Polygon" || g.type === "MultiPolygon");
-}
-
-export default function UnionDialog({ isOpen, onClose }: Props) {
+export default function Union({ isOpen, onClose }: Props) {
   const { layers, addLayer } = useLayers();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -35,7 +33,7 @@ export default function UnionDialog({ isOpen, onClose }: Props) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isListOpen]);
 
-  // reset når dialogen lukkes
+  // reset når popupen lukkes
   useEffect(() => {
     if (!isOpen) {
       setSelectedIds([]);
@@ -185,148 +183,77 @@ export default function UnionDialog({ isOpen, onClose }: Props) {
   return (
     <Popup isOpen={isOpen} onClose={onClose} title="Union" width="narrow" actions={actions}>
       {busy ? (
-        <div className="upload-busy" style={{ textAlign: "center", padding: "24px 0" }}>
-          <div className="spinner" style={{ width: 48, height: 48, marginBottom: 10 }} />
-          <div style={{ fontWeight: 600 }}>Slår sammen...</div>
+        <div className="busy-container">
+          <div className="spinner" />
+          <div className="busy-text">Slår sammen...</div>
         </div>
       ) : !hasLayers ? (
-        <div
-          style={{
-            background: "#fef2f2",
-            border: "1px solid #fecaca",
-            borderRadius: 8,
-            color: "#b91c1c",
-            padding: "10px 12px",
-            fontSize: 14,
-            textAlign: "center",
-          }}
-        >
+        <div className="warning-message">
           Du må ha minst to lag med polygon-geometrier for å lage union.
         </div>
       ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <div style={{ fontWeight: 600 }}>Velg lag som skal slås sammen</div>
+        <div className="choose-layer-container">
+          <div className="field-group">
+            <div className="choose-layer-text">Velg lag som skal slås sammen</div>
 
-          {selectedIds.length > 0 && (
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 8,
-                minHeight: 36,
-              }}
-            >
-              {selectedIds.map((id) => {
-                const l = layers.find((x) => x.id === id);
-                const bgColor = l?.color ?? "#f3efe6";
-                return (
-                  <span
-                    key={id}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 4,
-                      background: bgColor,
-                      borderRadius: 9999,
-                      border: "1px solid rgba(0,0,0,0.03)",
-                      padding: "3px 10px",
-                      fontSize: 13,
-                    }}
-                  >
-                    {l?.name ?? "Ukjent lag"}
-                    <button
-                      onClick={() => removeSelected(id)}
-                      style={{
-                        background: "transparent",
-                        border: "none",
-                        cursor: "pointer",
-                        fontWeight: 700,
-                        lineHeight: 1,
-                      }}
-                    >
-                      ×
-                    </button>
-                  </span>
-                );
-              })}
-            </div>
-          )}
+            {selectedIds.length > 0 && (
+              <div className="selected-layers">
+                {selectedIds.map((id) => {
+                  const l = layers.find((x) => x.id === id);
+                  const bgColor = l?.color ?? "#f3efe6";
 
-          {/* dropdown */}
-          <div style={{ position: "relative" }} ref={listRef}>
-            <button
-              type="button"
-              onClick={() => setIsListOpen((x) => !x)}
-              style={{
-                width: "100%",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: 8,
-                padding: "8px 10px",
-                borderRadius: isListOpen ? "8px 8px 0 0" : 8,
-                border: "1px solid var(--border)",
-                background: "#fff",
-                cursor: "pointer",
-              }}
-            >
-              <span style={{ fontSize: 14 }}>
-                {selectableLayers.length === 0
-                  ? "Alle polygon-lag er valgt"
-                  : "Legg til lag i union…"}
-              </span>
-              <span aria-hidden style={{ fontSize: 12 }}>
-                ▾
-              </span>
-            </button>
-
-            {isListOpen && selectableLayers.length > 0 && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "100%",
-                  left: 0,
-                  right: 0,
-                  background: "#fff",
-                  border: "1px solid var(--border)",
-                  borderTop: "none",
-                  borderRadius: "0 0 8px 8px",
-                  boxShadow: "0 14px 30px rgba(0,0,0,0.06)",
-                  maxHeight: 260,
-                  overflowY: "auto",
-                  zIndex: 40,
-                }}
-                className="clip-dropdown-scroll"
-              >
-                {selectableLayers.map((l) => (
-                  <button key={l.id} onClick={() => addSelected(l.id)} className="dialog-options">
+                  return (
                     <span
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: "50%",
-                        background: l.color,
-                      }}
-                    />
-                    <span>{l.name}</span>
-                  </button>
-                ))}
+                      key={id}
+                      className="selected-layer-chip"
+                      style={{ backgroundColor: toTransparent(bgColor, 0.8) }}
+                    >
+                      {l?.name ?? "Ukjent lag"}
+                      <button
+                        type="button"
+                        className="selected-layer-remove"
+                        onClick={() => removeSelected(id)}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  );
+                })}
               </div>
             )}
+
+            {/* Dropdown for å legge til flere lag */}
+            <div className="dropdown" ref={listRef}>
+              <button
+                type="button"
+                className="dropdown-toggle"
+                style={{
+                  borderRadius: isListOpen ? "8px 8px 0 0" : "8px",
+                }}
+                onClick={() => setIsListOpen((x) => !x)}
+              >
+                <span className="dropdown-text">
+                  {selectableLayers.length === 0 ? "Alle lag er valgt" : "Legg til lag i union…"}
+                </span>
+                <span aria-hidden className="dropdown-hidden">
+                  ▾
+                </span>
+              </button>
+
+              {isListOpen && selectableLayers.length > 0 && (
+                <div className="clip-dropdown-scroll">
+                  {selectableLayers.map((l) => (
+                    <button key={l.id} onClick={() => addSelected(l.id)} className="popup-buttons">
+                      <span className="layer-color-dot" style={{ backgroundColor: l.color }} />
+                      <span className="layer-name-text">{l.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          {error && (
-            <div
-              className="hint-box"
-              style={{
-                color: "#b91c1c",
-                borderColor: "#fecaca",
-                background: "#fef2f2",
-              }}
-            >
-              {error}
-            </div>
-          )}
+          {error && <div className="error-message">{error}</div>}
         </div>
       )}
     </Popup>

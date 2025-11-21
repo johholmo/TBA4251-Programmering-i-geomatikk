@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { useLayers } from "../context/LayersContext";
+import { useLayers } from "../../context/LayersContext";
 import * as turf from "@turf/turf";
 import { featureCollection } from "@turf/helpers";
 import type { Feature, Geometry, FeatureCollection as FC } from "geojson";
-import { to25832 } from "../utils/reproject";
-import Popup, { type Action } from "./popup/Popup";
+import { to25832 } from "../../utils/reproject";
+import Popup, { type Action } from "../popup/Popup";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
 };
 
-export default function BufferDialog({ isOpen, onClose }: Props) {
+export default function Buffer({ isOpen, onClose }: Props) {
   const { layers, addLayer } = useLayers();
   const [selectedLayerId, setSelectedLayerId] = useState("");
   const [bufferDistance, setBufferDistance] = useState("");
@@ -31,7 +31,7 @@ export default function BufferDialog({ isOpen, onClose }: Props) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isListOpen]);
 
-  // reset når dialogen lukkes
+  // reset når popupen lukkes
   useEffect(() => {
     if (!isOpen) {
       setSelectedLayerId("");
@@ -127,75 +127,36 @@ export default function BufferDialog({ isOpen, onClose }: Props) {
   return (
     <Popup isOpen={isOpen} onClose={onClose} title="Buffer" width="narrow" actions={actions}>
       {busy ? (
-        <div className="upload-busy" style={{ textAlign: "center", padding: "24px 0" }}>
-          <div className="spinner" style={{ width: 48, height: 48, marginBottom: 10 }} />
-          <div style={{ fontWeight: 600 }}>Lager buffer…</div>
+        <div className="busy-container">
+          <div className="spinner" />
+          <div className="busy-text">Lager buffer…</div>
         </div>
       ) : !hasLayers ? (
-        <div
-          style={{
-            background: "#fef2f2",
-            border: "1px solid #fecaca",
-            borderRadius: 8,
-            color: "#b91c1c",
-            padding: "10px 12px",
-            fontSize: 14,
-            textAlign: "center",
-          }}
-        >
-          Du må laste opp data før du kan lage buffer.
-        </div>
+        <div className="warning-message">Du må laste opp data før du kan lage buffer.</div>
       ) : (
-        <div style={{ display: "grid", gap: 16 }}>
+        <div className="choose-layer-container">
           {/* velg lag */}
-          <div>
-            <div style={{ fontWeight: 600, marginBottom: 6 }}>
-              Velg laget du vil lage buffer rundt
-            </div>
-            <div style={{ position: "relative" }} ref={listRef}>
+          <div className="field-group">
+            <div className="choose-layer-text">Velg laget du vil lage buffer rundt</div>
+            <div className="dropdown" ref={listRef}>
               <button
                 type="button"
-                onClick={() => setIsListOpen((x) => !x)}
+                className="dropdown-toggle"
                 style={{
-                  width: "100%",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "8px 10px",
-                  borderRadius: isListOpen ? "8px 8px 0 0" : 8,
-                  border: "1px solid var(--border)",
-                  background: "#fff",
-                  cursor: "pointer",
+                  borderRadius: isListOpen ? "8px 8px 0 0" : "8px",
                 }}
+                onClick={() => setIsListOpen((x) => !x)}
               >
-                <span style={{ fontSize: 14 }}>
+                <span className="dropdown-text">
                   {selectedLayer ? selectedLayer.name : "Velg lag…"}
                 </span>
-                <span aria-hidden style={{ fontSize: 12 }}>
+                <span aria-hidden className="dropdown-hidden">
                   ▾
                 </span>
               </button>
 
               {isListOpen && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    right: 0,
-                    background: "#fff",
-                    border: "1px solid var(--border)",
-                    borderTop: "none",
-                    borderRadius: "0 0 8px 8px",
-                    boxShadow: "0 14px 30px rgba(0,0,0,0.06)",
-                    maxHeight: 260,
-                    overflowY: "auto",
-                    zIndex: 9999,
-                    scrollbarWidth: "none",
-                  }}
-                  className="clip-dropdown-scroll"
-                >
+                <div className="clip-dropdown-scroll">
                   {layers.map((l) => (
                     <button
                       key={l.id}
@@ -203,7 +164,7 @@ export default function BufferDialog({ isOpen, onClose }: Props) {
                         setSelectedLayerId(l.id);
                         setIsListOpen(false);
                       }}
-                      className="dialog-options"
+                      className="popup-buttons"
                     >
                       <span
                         style={{
@@ -223,31 +184,17 @@ export default function BufferDialog({ isOpen, onClose }: Props) {
 
           {/* buffer-avstand */}
           <div>
-            <label style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
-              Buffer-avstand (meter)
-            </label>
+            <label className="choose-layer-text">Buffer-avstand (meter)</label>
             <input
               type="number"
               min={1}
               value={bufferDistance}
               onChange={(e) => setBufferDistance(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "7px 10px",
-                borderRadius: 8,
-                border: "1px solid var(--border)",
-              }}
+              className="input-number"
             />
           </div>
 
-          {error && (
-            <div
-              className="hint-box"
-              style={{ color: "#b91c1c", borderColor: "#fecaca", background: "#fef2f2" }}
-            >
-              {error}
-            </div>
-          )}
+          {error && <div className="error-message">{error}</div>}
         </div>
       )}
     </Popup>

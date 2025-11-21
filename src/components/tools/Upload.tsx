@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
 import type { FeatureCollection, Geometry } from "geojson";
-import { useLayers } from "../context/LayersContext";
-import { toWGS84, to25832 } from "../utils/reproject";
-import Popup from "../components/popup/Popup";
+import { useLayers } from "../../context/LayersContext";
+import { toWGS84, to25832 } from "../../utils/reproject";
+import Popup from "../popup/Popup";
 
 type Props = {
   isOpen: boolean;
@@ -51,7 +51,7 @@ function isCRS84orWGS(fc: FeatureCollection<Geometry>): boolean {
   return Math.abs(x) <= 180 && Math.abs(y) <= 90;
 }
 
-export default function UploadDialog({ isOpen, onClose }: Props) {
+export default function Upload({ isOpen, onClose }: Props) {
   const { addLayer } = useLayers();
   const [busy, setBusy] = useState(false); // used for spinner
   const [error, setError] = useState<string | null>(null);
@@ -134,32 +134,18 @@ export default function UploadDialog({ isOpen, onClose }: Props) {
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onClick={() => fileInputRef.current?.click()}
-            style={{
-              border: "2px dashed var(--border)",
-              borderRadius: 12,
-              background: "#f8f6f1",
-              padding: 26,
-              textAlign: "center",
-              cursor: "pointer",
-              transition: "background .15s ease",
-            }}
+            className="upload-container"
           >
-            <div style={{ fontWeight: 600, marginBottom: 4 }}>Dra og slipp GeoJSON-filer her</div>
-            <div style={{ fontSize: 13, color: "var(--ink-200)" }}>
-              eller trykk for å velge fra filer
-            </div>
+            <div className="upload-text">Dra og slipp GeoJSON-filer her</div>
+            <div className="upload-text-second">eller trykk for å velge fra filer</div>
           </div>
 
-          {error && (
-            <p style={{ margin: 0, color: "#b91c1c", fontSize: 13, textAlign: "center" }}>
-              {error}
-            </p>
-          )}
+          {error && <p className="error-message">{error}</p>}
         </div>
       ) : (
-        <div className="upload-busy" style={{ textAlign: "center" }}>
-          <div className="spinner" style={{ width: 48, height: 48, marginBottom: 10 }} />
-          <div style={{ fontWeight: 600 }}>Laster opp filer…</div>
+        <div className="busy-container">
+          <div className="spinner" />
+          <div className="busy-text">Laster opp filer…</div>
         </div>
       )}
     </Popup>

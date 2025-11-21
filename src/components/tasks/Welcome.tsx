@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Popup from "./Popup";
+import Popup from "../popup/Popup";
 import Tour from "../ToolTour";
 
 type Props = {

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { useLayers } from "../context/LayersContext";
+import { useLayers } from "../../context/LayersContext";
 import MapDraw from "./MapDraw";
 
 type LayerEntry = {

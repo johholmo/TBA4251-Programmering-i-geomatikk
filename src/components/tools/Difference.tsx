@@ -1,73 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import { useLayers } from "../context/LayersContext";
+import { useLayers } from "../../context/LayersContext";
 import type { Feature, FeatureCollection, Geometry, Polygon, MultiPolygon } from "geojson";
 import cleanCoords from "@turf/clean-coords";
 import bbox from "@turf/bbox";
 import booleanIntersects from "@turf/boolean-intersects";
-import difference from "@turf/difference";
-import Popup, { type Action } from "./popup/Popup";
+import Popup, { type Action } from "../popup/Popup";
+import { isPoly, turfDifference } from "../../utils/geoTools";
 
-import { to25832 } from "../utils/reproject";
+import { to25832 } from "../../utils/reproject";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
 };
 
-function isPoly(g: Geometry | null | undefined): g is Polygon | MultiPolygon {
-  return !!g && (g.type === "Polygon" || g.type === "MultiPolygon");
-}
-
-// Wrapper med samme logikk som i ClipDialog
-function turfDifference(
-  a: Feature<Polygon | MultiPolygon> | Polygon | MultiPolygon,
-  b: Feature<Polygon | MultiPolygon> | Polygon | MultiPolygon
-): Feature<Polygon | MultiPolygon> | null {
-  const fn = difference as any;
-
-  try {
-    // Prøv først vanlig difference(a, b)
-    return fn(a, b) as Feature<Polygon | MultiPolygon> | null;
-  } catch (e: any) {
-    const msg = e?.message || "";
-
-    // Typiske feil pga turf, så eliminerer dem
-    if (
-      !msg.includes("Must have at least two features") &&
-      !msg.includes("Must specify at least 2 geometries")
-    ) {
-      throw e;
-    }
-
-    const featA: Feature<Polygon | MultiPolygon> =
-      (a as any).type === "Feature"
-        ? (a as any)
-        : {
-            type: "Feature",
-            properties: {},
-            geometry: a as Polygon | MultiPolygon,
-          };
-
-    const featB: Feature<Polygon | MultiPolygon> =
-      (b as any).type === "Feature"
-        ? (b as any)
-        : {
-            type: "Feature",
-            properties: {},
-            geometry: b as Polygon | MultiPolygon,
-          };
-
-    const fc: FeatureCollection<Polygon | MultiPolygon> = {
-      type: "FeatureCollection",
-      features: [featA, featB],
-    };
-
-    // Kaller difference på nytt, men med FeatureCollection
-    return fn(fc) as Feature<Polygon | MultiPolygon> | null;
-  }
-}
-
-export default function DifferenceDialog({ isOpen, onClose }: Props) {
+export default function Difference({ isOpen, onClose }: Props) {
   const { layers, addLayer } = useLayers();
 
   const [layerAId, setLayerAId] = useState<string>("");
@@ -102,7 +49,7 @@ export default function DifferenceDialog({ isOpen, onClose }: Props) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isListAOpen, isListBOpen]);
 
-  // reset når dialogen lukkes
+  // reset når popupen lukkes
   useEffect(() => {
     if (!isOpen) {
       setLayerAId("");
@@ -312,81 +259,42 @@ export default function DifferenceDialog({ isOpen, onClose }: Props) {
 
   if (!isOpen) return null;
 
-  if (!isOpen) return null;
-
   return (
     <Popup isOpen={isOpen} onClose={onClose} title="Difference" width="narrow" actions={actions}>
       {busy ? (
-        // Fullskjerm spinner mens difference kjører
-        <div className="upload-busy" style={{ textAlign: "center", padding: "24px 0" }}>
-          <div className="spinner" style={{ width: 48, height: 48, marginBottom: 10 }} />
-          <div style={{ fontWeight: 600 }}>Utfører difference…</div>
+        <div className="busy-container">
+          <div className="spinner" />
+          <div className="busy-text">Utfører difference…</div>
         </div>
       ) : !hasLayers ? (
-        <div
-          style={{
-            background: "#fef2f2",
-            border: "1px solid #fecaca",
-            borderRadius: 8,
-            color: "#b91c1c",
-            padding: "10px 12px",
-            fontSize: 14,
-            textAlign: "center",
-          }}
-        >
+        <div className="warning-message">
           Du må ha minst to lag med polygon-geometrier for å bruke difference.
         </div>
       ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <div style={{ fontWeight: 600 }}>Velg laget du vil beholde (A)</div>
-
-          <div>
-            <div style={{ position: "relative" }} ref={listARef}>
+        <div className="choose-layer-container">
+          <div className="field-group">
+            <div className="choose-layer-text">Velg laget du vil beholde (A)</div>
+            <div className="dropdown" ref={listARef}>
               <button
                 type="button"
-                onClick={() => setIsListAOpen((x) => !x)}
+                className="dropdown-toggle"
                 style={{
-                  width: "100%",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "8px 10px",
-                  borderRadius: isListAOpen ? "8px 8px 0 0" : 8,
-                  border: "1px solid var(--border)",
-                  background: "#fff",
-                  cursor: "pointer",
+                  borderRadius: isListAOpen ? "8px 8px 0 0" : "8px",
                 }}
+                onClick={() => setIsListAOpen((x) => !x)}
               >
-                <span style={{ fontSize: 14 }}>
+                <span className="dropdown-text">
                   {layerAId
-                    ? polygonLayers.find((l) => l.id === layerAId)?.name ?? "Velg lag"
+                    ? (polygonLayers.find((l) => l.id === layerAId)?.name ?? "Velg lag")
                     : "Velg lag"}
                 </span>
-                <span aria-hidden style={{ fontSize: 12 }}>
+                <span area-hidden className="dropdown-hidden">
                   ▾
                 </span>
               </button>
 
               {isListAOpen && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    right: 0,
-                    background: "#fff",
-                    border: "1px solid var(--border)",
-                    borderTop: "none",
-                    borderRadius: "0 0 8px 8px",
-                    boxShadow: "0 14px 30px rgba(0,0,0,0.06)",
-                    maxHeight: 260,
-                    overflowY: "auto",
-                    zIndex: 9999,
-                    scrollbarWidth: "none",
-                  }}
-                  className="clip-dropdown-scroll"
-                >
+                <div className="clip-dropdown-scroll">
                   {polygonLayers.map((l) => (
                     <button
                       key={l.id}
@@ -395,7 +303,7 @@ export default function DifferenceDialog({ isOpen, onClose }: Props) {
                         if (layerBId === l.id) setLayerBId("");
                         setIsListAOpen(false);
                       }}
-                      className="dialog-options"
+                      className="popup-buttons"
                     >
                       <span
                         style={{
@@ -413,55 +321,29 @@ export default function DifferenceDialog({ isOpen, onClose }: Props) {
             </div>
           </div>
 
-          <div style={{ fontWeight: 600 }}>Velg laget du vil trekke fra (B)</div>
-
-          <div>
-            <div style={{ position: "relative" }} ref={listBRef}>
+          <div className="field-group">
+            <div className="choose-layer-text">Velg laget du vil trekke fra (B)</div>
+            <div className="dropdown" ref={listBRef}>
               <button
                 type="button"
-                onClick={() => setIsListBOpen((x) => !x)}
+                className="dropdown-toggle"
                 style={{
-                  width: "100%",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "8px 10px",
-                  borderRadius: isListBOpen ? "8px 8px 0 0" : 8,
-                  border: "1px solid var(--border)",
-                  background: "#fff",
-                  cursor: "pointer",
+                  borderRadius: isListBOpen ? "8px 8px 0 0" : "8px",
                 }}
+                onClick={() => setIsListBOpen((x) => !x)}
               >
-                <span style={{ fontSize: 14 }}>
+                <span className="dropdown-text">
                   {layerBId
-                    ? polygonLayers.find((l) => l.id === layerBId)?.name ?? "Velg lag B…"
+                    ? (polygonLayers.find((l) => l.id === layerBId)?.name ?? "Velg lag B…")
                     : "Velg lag B…"}
                 </span>
-                <span aria-hidden style={{ fontSize: 12 }}>
+                <span area-hidden className="dropdown-hidden">
                   ▾
                 </span>
               </button>
 
               {isListBOpen && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    right: 0,
-                    background: "#fff",
-                    border: "1px solid var(--border)",
-                    borderTop: "none",
-                    borderRadius: "0 0 8px 8px",
-                    boxShadow: "0 14px 30px rgba(0,0,0,0.06)",
-                    maxHeight: 260,
-                    overflowY: "auto",
-                    zIndex: 9999,
-                    scrollbarWidth: "none",
-                  }}
-                  className="clip-dropdown-scroll"
-                >
+                <div className="clip-dropdown-scroll">
                   {polygonLayers
                     .filter((l) => l.id !== layerAId)
                     .map((l) => (
@@ -471,7 +353,7 @@ export default function DifferenceDialog({ isOpen, onClose }: Props) {
                           setLayerBId(l.id);
                           setIsListBOpen(false);
                         }}
-                        className="dialog-options"
+                        className="popup-buttons"
                       >
                         <span
                           style={{
@@ -489,18 +371,7 @@ export default function DifferenceDialog({ isOpen, onClose }: Props) {
             </div>
           </div>
 
-          {error && (
-            <div
-              className="hint-box"
-              style={{
-                color: "#b91c1c",
-                borderColor: "#fecaca",
-                background: "#fef2f2",
-              }}
-            >
-              {error}
-            </div>
-          )}
+          {error && <div className="error-message">{error}</div>}
         </div>
       )}
     </Popup>

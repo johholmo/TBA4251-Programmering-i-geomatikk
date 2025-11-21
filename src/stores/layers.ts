@@ -29,23 +29,20 @@ export const useLayers = create<LayerState>((set) => ({
           id: nanoid(),
           name: it.name,
           data: it.data,
-          color: randomPastel(),     // startfarge
+          color: randomPastel(), // startfarge
           visible: true,
         })),
       ],
     })),
   toggleVisible: (id) =>
     set((state) => ({
-      layers: state.layers.map((l) =>
-        l.id === id ? { ...l, visible: !l.visible } : l
-      ),
+      layers: state.layers.map((l) => (l.id === id ? { ...l, visible: !l.visible } : l)),
     })),
   setColor: (id, color) =>
     set((state) => ({
       layers: state.layers.map((l) => (l.id === id ? { ...l, color } : l)),
     })),
-  removeLayer: (id) =>
-    set((state) => ({ layers: state.layers.filter((l) => l.id !== id) })),
+  removeLayer: (id) => set((state) => ({ layers: state.layers.filter((l) => l.id !== id) })),
   clear: () => set({ layers: [] }),
 }));
 

@@ -3,52 +3,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from 
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useLayers, LAYER_PALETTE } from "../context/LayersContext";
-
-// SVG-ikoner med styling
-const IconEye = ({ stroke = "#111" }: { stroke?: string }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-    <path
-      d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"
-      stroke={stroke}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <circle cx="12" cy="12" r="3" stroke={stroke} strokeWidth="2" />
-  </svg>
-);
-
-const IconEyeOff = ({ stroke = "#555" }: { stroke?: string }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-    <path d="M3 3l18 18" stroke={stroke} strokeWidth="2" strokeLinecap="round" />
-    <path
-      d="M9.9 4.24A10.94 10.94 0 0 1 12 4c6.5 0 10 8 10 8a17.6 17.6 0 0 1-3.07 4.51M6.47 6.47C3.87 8.12 2 12 2 12a17.63 17.63 0 0 0 3.54 4.71"
-      stroke={stroke}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const IconTrash = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-    <path d="M3 6h18" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" />
-    <path
-      d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-      stroke="#dc2626"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-    <path
-      d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"
-      stroke="#dc2626"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-    <path d="M10 11v6M14 11v6" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" />
-  </svg>
-);
+import { IconEye, IconEyeOff, IconTrash } from "../utils/icons";
 
 // Sorterbart element
 function SortableItem({
@@ -69,21 +24,13 @@ function SortableItem({
     <div
       {...attributes}
       {...listeners}
-      style={{
-        width: 14,
-        height: 26,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        gap: 3,
-        cursor: "grab",
-      }}
+      className="layer-drag-handle"
       aria-label="Flytt lag"
       title="Dra for å endre rekkefølge"
     >
-      <span style={{ width: "100%", height: 2, background: "#cbd5e1", borderRadius: 999 }} />
-      <span style={{ width: "100%", height: 2, background: "#cbd5e1", borderRadius: 999 }} />
-      <span style={{ width: "100%", height: 2, background: "#cbd5e1", borderRadius: 999 }} />
+      <span className="drag-span" />
+      <span className="drag-span" />
+      <span className="drag-span" />
     </div>
   );
 
@@ -94,11 +41,8 @@ function SortableItem({
   );
 }
 
-// Hoved-komponenten til sidebaren
 export default function Sidebar() {
   const { layers, setVisibility, removeLayer, reorderLayers, setColor, setName } = useLayers(); // Henter fra layercontext
-
-  // dnd-kit stuff
   const sensors = useSensors(useSensor(PointerSensor));
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -153,9 +97,9 @@ export default function Sidebar() {
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <SortableContext items={layers.map((l) => l.id)} strategy={verticalListSortingStrategy}>
-        <div className="sidebar sidebar-wide" ref={sidebarRef}>
+        <div className="sidebar" ref={sidebarRef}>
           <h4>Lag</h4>
-          <p className="muted">{tipText}</p>
+          <p className="info-text">{tipText}</p>
 
           <ul className="layer-list">
             {layers.map((l) => {
