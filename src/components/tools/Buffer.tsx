@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useLayers } from "../../context/LayersContext";
 import * as turf from "@turf/turf";
-import { featureCollection } from "@turf/helpers";
-import type { Feature, Geometry, FeatureCollection as FC } from "geojson";
-import { to25832 } from "../../utils/geomaticFunctions";
+import type { Feature, Geometry, FeatureCollection as FC, Polygon, MultiPolygon } from "geojson";
+import { toWGS84 } from "../../utils/geomaticFunctions";
 import Popup, { type Action } from "../popup/Popup";
 
 type Props = {
@@ -60,25 +59,35 @@ export default function Buffer({ isOpen, onClose }: Props) {
           throw new Error("Fant ikke valgt lag.");
         }
 
-        const bufferedFeatures: Feature<Geometry>[] = [];
+        // Bruk geojson25832 for buffer – mye raskere og riktige meter (Tips fra AI)
+        const fc25832 = layer.geojson25832 as FC<Geometry>;
 
-        for (const f of layer.geojson4326.features) {
-          if (!f.geometry) continue;
-          const buffered = turf.buffer(f as Feature<Geometry>, distance, {
-            units: "meters",
-          });
-          // Hvis bufferen lykkes, legg til i listen
-          if (buffered) {
-            bufferedFeatures.push(buffered as Feature<Geometry>);
-          }
-        }
+        // turf.buffer kan returnere enten Feature eller FeatureCollection, så håndter begge
+        const buffered = turf.buffer(fc25832 as any, distance, {
+          units: "meters",
+        }) as Feature<Polygon | MultiPolygon> | FC<Polygon | MultiPolygon>;
 
-        if (bufferedFeatures.length === 0) {
+        if (!buffered) {
           throw new Error("Fikk ikke laget buffer av dette laget.");
         }
 
-        const buffered4326: FC<Geometry> = featureCollection(bufferedFeatures);
-        const buffered25832 = to25832(buffered4326);
+        let buffered25832: FC<Geometry>;
+        if (buffered.type === "FeatureCollection") {
+          buffered25832 = buffered as FC<Geometry>;
+        } else {
+          // Enkeltfeature pakkes inn i FeatureCollection
+          buffered25832 = {
+            type: "FeatureCollection",
+            features: [buffered as Feature<Geometry>],
+          };
+        }
+
+        if (!buffered25832.features.length) {
+          throw new Error("Fikk ikke laget buffer av dette laget.");
+        }
+
+        // Konverter tilbake til WGS84 for visning i kartet
+        const buffered4326 = toWGS84(buffered25832);
 
         // Lagrer som nytt lag, med justert navn og samme farge som originalt lag
         addLayer({
