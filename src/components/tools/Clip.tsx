@@ -15,7 +15,7 @@ import cleanCoords from "@turf/clean-coords";
 import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
 import booleanIntersects from "@turf/boolean-intersects";
 import Popup, { type Action } from "../popup/Popup";
-import { isPoly, turfIntersect, to25832 } from "../../utils/geomaticFunctions";
+import { isPoly, turfIntersect, to25832, unionPolygons } from "../../utils/geomaticFunctions";
 import { toTransparent } from "../../utils/commonFunctions";
 
 type Props = {
@@ -83,9 +83,10 @@ export default function Clip({ isOpen, onClose }: Props) {
     setSelectedIds((prev) => prev.filter((x) => x !== id));
   };
 
-  // Håndterer selve klippe-operasjonen (hjelp fra AI for å gjøre set sekvensielt)
+  // Håndterer selve klippe-operasjonen (hjelp fra AI til å gjøre det sekvensielt)
   function handleClip() {
     if (!maskId || selectedIds.length === 0 || busy) return;
+
     // Finner maskelaget
     const maskLayer = layers.find((l) => l.id === maskId);
     if (!maskLayer) {
@@ -102,6 +103,19 @@ export default function Clip({ isOpen, onClose }: Props) {
       setError("Maskelaget må inneholde polygon-geometri.");
       return;
     }
+
+    // Tips fra AI: Lag en samlet union-maske (mye raskere enn å loope over alle maskefeatures for hver source-feature)
+    const maskUnion = unionPolygons(maskFeatures);
+    if (!maskUnion || !maskUnion.geometry) {
+      setError("Klarte ikke å lage en samlet maske.");
+      return;
+    }
+
+    const maskFeat: Feature<Polygon | MultiPolygon> = {
+      type: "Feature",
+      properties: {},
+      geometry: maskUnion.geometry,
+    };
 
     const sourceIds = [...selectedIds];
     const total = sourceIds.length;
@@ -141,115 +155,86 @@ export default function Clip({ isOpen, onClose }: Props) {
 
           const geomType = feature.geometry.type;
 
-          for (const maskFeature of maskFeatures) {
-            try {
-              // Polygon klipping
-              if (geomType === "Polygon" || geomType === "MultiPolygon") {
-                const maskGeom = maskFeature.geometry as Polygon | MultiPolygon;
-                const srcGeom = feature.geometry as Polygon | MultiPolygon;
+          try {
+            // Polygon klipping
+            if (geomType === "Polygon" || geomType === "MultiPolygon") {
+              const srcFeat: Feature<Polygon | MultiPolygon> = {
+                type: "Feature",
+                properties: feature.properties || {},
+                geometry: feature.geometry as Polygon | MultiPolygon,
+              };
 
-                const maskFeat = {
-                  type: "Feature" as const,
+              // Sjekk om de faktisk intersecter før klipping
+              const hasIntersection = booleanIntersects(maskFeat as any, srcFeat as any);
+              if (!hasIntersection) continue;
+
+              let clipped: Feature<Polygon | MultiPolygon> | null = null;
+
+              try {
+                clipped = turfIntersect(maskFeat as any, srcFeat as any);
+              } catch {
+                // Prøver å rense koordinatene hvis turf feiler
+                const cleanedMask = cleanCoords(maskFeat.geometry as any) as Polygon | MultiPolygon;
+                const cleanedSrc = cleanCoords(srcFeat.geometry as any) as Polygon | MultiPolygon;
+
+                const cleanedMaskFeat: Feature<Polygon | MultiPolygon> = {
+                  type: "Feature",
                   properties: {},
-                  geometry: maskGeom,
+                  geometry: cleanedMask,
                 };
-                const srcFeat = {
-                  type: "Feature" as const,
+                const cleanedSrcFeat: Feature<Polygon | MultiPolygon> = {
+                  type: "Feature",
                   properties: feature.properties || {},
-                  geometry: srcGeom,
+                  geometry: cleanedSrc,
                 };
-                // Sjekk om de faktisk intersecter før klipping
-                const hasIntersection = booleanIntersects(maskFeat as any, srcFeat as any);
-                if (!hasIntersection) continue;
-
-                let clipped: Feature<Polygon | MultiPolygon> | null = null;
 
                 try {
-                  clipped = turfIntersect(maskFeat as any, srcFeat as any);
+                  clipped = turfIntersect(cleanedMaskFeat as any, cleanedSrcFeat as any);
                 } catch {
-                  // Prøver å rense koordinatene hvis turf feiler (tips fra AI)
-                  const cleanedMask = cleanCoords(maskGeom as any) as Polygon | MultiPolygon;
-                  const cleanedSrc = cleanCoords(srcGeom as any) as Polygon | MultiPolygon;
-                  const cleanedMaskFeat = {
-                    type: "Feature" as const,
-                    properties: {},
-                    geometry: cleanedMask,
-                  };
-                  const cleanedSrcFeat = {
-                    type: "Feature" as const,
-                    properties: feature.properties || {},
-                    geometry: cleanedSrc,
-                  };
-
-                  try {
-                    // Prøver klipping igjen med rensede geometrier
-                    clipped = turfIntersect(cleanedMaskFeat as any, cleanedSrcFeat as any);
-                  } catch {
-                    continue;
-                  }
-                }
-                // Legg til i output hvis det ble noe klippet ut
-                if (clipped && clipped.geometry) {
-                  const alreadyAdded = outFeatures4326.some(
-                    (f) => JSON.stringify(f.geometry) === JSON.stringify(clipped!.geometry)
-                  );
-                  // Unngå duplikater
-                  if (!alreadyAdded) {
-                    outFeatures4326.push({
-                      type: "Feature",
-                      properties: feature.properties || {},
-                      geometry: clipped.geometry as Geometry,
-                    } as Feature<Geometry>);
-                  }
-                }
-
-                // Linje klipping
-              } else if (geomType === "LineString" || geomType === "MultiLineString") {
-                const maskFeat = {
-                  type: "Feature" as const,
-                  properties: {},
-                  geometry: maskFeature.geometry,
-                };
-                const lineFeat = {
-                  type: "Feature" as const,
-                  properties: feature.properties || {},
-                  geometry: feature.geometry as LineString | MultiLineString,
-                };
-
-                const intersects = booleanIntersects(maskFeat as any, lineFeat as any);
-                // Hvis de intersecter, legg til i output
-                if (intersects) {
-                  const alreadyAdded = outFeatures4326.some(
-                    (f) => JSON.stringify(f.geometry) === JSON.stringify(feature.geometry)
-                  );
-                  // Unngå duplikater
-                  if (!alreadyAdded) {
-                    outFeatures4326.push(lineFeat as Feature<Geometry>);
-                  }
-                  break;
-                }
-
-                // Punkt klipping
-              } else if (geomType === "Point") {
-                const isInside = booleanPointInPolygon(
-                  feature.geometry as any,
-                  maskFeature.geometry as any
-                );
-                // Hvis punktet er innenfor polygonet, legg til i output
-                if (isInside) {
-                  const alreadyAdded = outFeatures4326.some(
-                    (f) => JSON.stringify(f.geometry) === JSON.stringify(feature.geometry)
-                  );
-                  // Unngå duplikater
-                  if (!alreadyAdded) {
-                    outFeatures4326.push(feature as Feature<Geometry>);
-                  }
-                  break;
+                  clipped = null;
                 }
               }
-            } catch (err) {
-              console.warn(`Det skjedde en feil når ${geomType} ble forsøkt klippet:`, err);
+
+              // Legg til i output hvis det ble noe klippet ut
+              if (clipped && clipped.geometry) {
+                outFeatures4326.push({
+                  type: "Feature",
+                  properties: feature.properties || {},
+                  geometry: clipped.geometry as Geometry,
+                });
+              }
+
+              continue;
             }
+
+            // Linje klipping
+            if (geomType === "LineString" || geomType === "MultiLineString") {
+              const lineFeat: Feature<LineString | MultiLineString> = {
+                type: "Feature",
+                properties: feature.properties || {},
+                geometry: feature.geometry as LineString | MultiLineString,
+              };
+
+              const intersects = booleanIntersects(maskFeat as any, lineFeat as any);
+              if (intersects) {
+                outFeatures4326.push(lineFeat as Feature<Geometry>);
+              }
+
+              continue;
+            }
+
+            // Punkt klipping
+            if (geomType === "Point") {
+              const isInside = booleanPointInPolygon(
+                feature.geometry as any,
+                maskFeat.geometry as any
+              );
+              if (isInside) {
+                outFeatures4326.push(feature as Feature<Geometry>);
+              }
+            }
+          } catch (err) {
+            console.warn(`Det skjedde en feil når ${geomType} ble forsøkt klippet:`, err);
           }
         }
 
@@ -337,7 +322,7 @@ export default function Clip({ isOpen, onClose }: Props) {
             <>
               <div className="field-group">
                 <div className="choose-layer-text">Velg hvilke lag som skal klippes</div>
-                {/*/ Valgte lag */}
+                {/* Valgte lag */}
                 {selectedIds.length > 0 && (
                   <div className="selected-layers">
                     {selectedIds.map((id) => {
