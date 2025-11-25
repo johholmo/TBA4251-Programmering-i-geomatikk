@@ -37,7 +37,7 @@ export default function Welcome({ isOpen, onClose, onAfterTour, onStartTasks }: 
             onClick: () => setShowTour(true),
           },
           {
-            label: "Kom i gang!",
+            label: "Start på første oppgave!",
             variant: "primary",
             onClick: () => {
               onClose();
@@ -60,6 +60,7 @@ export default function Welcome({ isOpen, onClose, onAfterTour, onStartTasks }: 
         </p>
       </Popup>
 
+      {/*Tool tour*/}
       <Tour
         open={showTour}
         steps={steps}

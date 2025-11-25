@@ -1,12 +1,12 @@
 import Popup from "../popup/Popup";
 
-type Props = {
+type Props1 = {
   isOpen: boolean;
   onClose: () => void;
   onAdvance: () => void;
 };
 
-export default function Task1({ isOpen, onClose, onAdvance }: Props) {
+export default function Task1({ isOpen, onClose, onAdvance }: Props1) {
   return (
     <Popup
       isOpen={isOpen}

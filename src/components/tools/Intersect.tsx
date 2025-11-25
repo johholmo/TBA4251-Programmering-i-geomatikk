@@ -3,56 +3,20 @@ import { useLayers } from "../../context/LayersContext";
 import type { Feature, FeatureCollection, Geometry, Polygon, MultiPolygon } from "geojson";
 import cleanCoords from "@turf/clean-coords";
 import bbox from "@turf/bbox";
-import intersect from "@turf/intersect";
 import booleanIntersects from "@turf/boolean-intersects";
-import { to25832 } from "../../utils/reproject";
+import { to25832 } from "../../utils/geomaticFunctions";
 import Popup, { type Action } from "../popup/Popup";
-import { isPoly } from "../../utils/geoTools";
+import { isPoly, turfIntersect } from "../../utils/geomaticFunctions";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
 };
 
-// Wrapper med samme logikk som i Clip
-function turfIntersect(
-  a: Feature<Polygon | MultiPolygon> | Polygon | MultiPolygon,
-  b: Feature<Polygon | MultiPolygon> | Polygon | MultiPolygon
-): Feature<Polygon | MultiPolygon> | null {
-  const fn = intersect as any;
-
-  try {
-    return fn(a, b) as Feature<Polygon | MultiPolygon> | null;
-  } catch (e: any) {
-    if (!e?.message?.includes("Must specify at least 2 geometries")) {
-      throw e;
-    }
-    const featA: Feature<Polygon | MultiPolygon> =
-      (a as any).type === "Feature"
-        ? (a as any)
-        : {
-            type: "Feature",
-            properties: {},
-            geometry: a as Polygon | MultiPolygon,
-          };
-    const featB: Feature<Polygon | MultiPolygon> =
-      (b as any).type === "Feature"
-        ? (b as any)
-        : {
-            type: "Feature",
-            properties: {},
-            geometry: b as Polygon | MultiPolygon,
-          };
-    const fc = {
-      type: "FeatureCollection" as const,
-      features: [featA, featB],
-    };
-    return fn(fc) as Feature<Polygon | MultiPolygon> | null;
-  }
-}
-
+// Finner overlapp mellom to polygonlag
 export default function Intersect({ isOpen, onClose }: Props) {
   const { layers, addLayer } = useLayers();
+  // Definerer eget for lag A og B
   const [layerAId, setLayerAId] = useState<string>("");
   const [layerBId, setLayerBId] = useState<string>("");
   const [busy, setBusy] = useState(false);
@@ -62,12 +26,13 @@ export default function Intersect({ isOpen, onClose }: Props) {
   const listARef = useRef<HTMLDivElement | null>(null);
   const listBRef = useRef<HTMLDivElement | null>(null);
 
+  // Finner polygonlagene som kan velges
   const polygonLayers = layers.filter((l) =>
     l.geojson4326.features.some((f) => isPoly(f.geometry))
   );
   const hasLayers = polygonLayers.length >= 2;
 
-  // lukk ved klikk utenfor
+  // Lukk ved klikk utenfor
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       const target = e.target as Node;
@@ -82,7 +47,7 @@ export default function Intersect({ isOpen, onClose }: Props) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isListAOpen, isListBOpen]);
 
-  // reset når popupen lukkes
+  // Reset felt når popupen lukkes
   useEffect(() => {
     if (!isOpen) {
       setLayerAId("");
@@ -94,16 +59,18 @@ export default function Intersect({ isOpen, onClose }: Props) {
     }
   }, [isOpen]);
 
+  // Håndterer selve intersecten
   function handleIntersect() {
     if (!layerAId || !layerBId || layerAId === layerBId || busy) return;
 
-    setBusy(true);
+    setBusy(true); // Starter spinner
     setError(null);
 
     setTimeout(() => {
       let success = false;
 
       try {
+        // Finner lagene
         const layerA = polygonLayers.find((l) => l.id === layerAId);
         const layerB = polygonLayers.find((l) => l.id === layerBId);
 
@@ -111,9 +78,9 @@ export default function Intersect({ isOpen, onClose }: Props) {
           throw new Error("Fant ikke begge lagene som skulle intersectes.");
         }
 
+        // Finner polygonene
         const featsA: Feature<Polygon | MultiPolygon>[] = [];
         const featsB: Feature<Polygon | MultiPolygon>[] = [];
-
         for (const f of layerA.geojson4326.features) {
           if (isPoly(f.geometry)) {
             featsA.push({
@@ -123,7 +90,6 @@ export default function Intersect({ isOpen, onClose }: Props) {
             });
           }
         }
-
         for (const f of layerB.geojson4326.features) {
           if (isPoly(f.geometry)) {
             featsB.push({
@@ -137,6 +103,7 @@ export default function Intersect({ isOpen, onClose }: Props) {
         const outFeatures: Feature<Geometry>[] = [];
         const seenGeoms = new Set<string>();
 
+        // Gå gjennom alle kombinasjoner av features i A og B
         for (const fa of featsA) {
           for (const fb of featsB) {
             const geomA = fa.geometry;
@@ -144,26 +111,31 @@ export default function Intersect({ isOpen, onClose }: Props) {
 
             if (!geomA || !geomB) continue;
 
+            // Se om bounding boxes overlapper
             const bbA = bbox(geomA as any);
             const bbB = bbox(geomB as any);
-
             const overlap =
               bbA[0] <= bbB[2] && bbA[2] >= bbB[0] && bbA[1] <= bbB[3] && bbA[3] >= bbB[1];
 
+            // Hvis ingen overlapp, fortsett
             if (!overlap) continue;
 
+            // Sjekk om de faktisk intersecter
             const inters = booleanIntersects(
               { type: "Feature", properties: {}, geometry: geomA } as any,
               { type: "Feature", properties: {}, geometry: geomB } as any
             );
 
+            // Hvis ikke intersect, fortsett
             if (!inters) continue;
 
+            // Prøver å finne intersect
             let clipped: Feature<Polygon | MultiPolygon> | null = null;
 
             try {
               clipped = turfIntersect(fa as any, fb as any);
             } catch (err1) {
+              // Hvis trøbbel med turf, prøv å rense geometrier først (tips fra AI)
               const cleanedA = cleanCoords(geomA as any) as Polygon | MultiPolygon;
               const cleanedB = cleanCoords(geomB as any) as Polygon | MultiPolygon;
 
@@ -178,6 +150,7 @@ export default function Intersect({ isOpen, onClose }: Props) {
                 geometry: cleanedB,
               };
 
+              // Prøver på nytt med renset geometri
               try {
                 clipped = turfIntersect(featCleanA as any, featCleanB as any);
               } catch {
@@ -185,8 +158,10 @@ export default function Intersect({ isOpen, onClose }: Props) {
               }
             }
 
+            // Hvis intersect mislykkes, fortsett
             if (!clipped || !clipped.geometry) continue;
 
+            // Unngå duplikater ved å sjekke geometri
             const geomKey = JSON.stringify(clipped.geometry);
             if (seenGeoms.has(geomKey)) continue;
             seenGeoms.add(geomKey);
@@ -195,7 +170,7 @@ export default function Intersect({ isOpen, onClose }: Props) {
               ...(fa.properties || {}),
               ...(fb.properties || {}),
             };
-
+            // Legger til merget i output
             outFeatures.push({
               type: "Feature",
               properties: mergedProps,
@@ -204,11 +179,11 @@ export default function Intersect({ isOpen, onClose }: Props) {
           }
         }
 
+        // Legger til som nytt lag med navn, farge og projisering
         const intersect4326: FeatureCollection<Geometry> = {
           type: "FeatureCollection",
           features: outFeatures,
         };
-
         const intersect25832 = to25832(intersect4326);
         const nameA = layerA.name || "LagA";
         const nameB = layerB.name || "LagB";
@@ -228,7 +203,7 @@ export default function Intersect({ isOpen, onClose }: Props) {
         console.error(e);
         setError(e?.message || "Klarte ikke å utføre intersect.");
       } finally {
-        setBusy(false);
+        setBusy(false); // Stopper spinner og lukker popup
         if (success) {
           onClose();
         }
@@ -238,6 +213,7 @@ export default function Intersect({ isOpen, onClose }: Props) {
 
   if (!isOpen) return null;
 
+  // Knappene i popupen
   const actions: Action[] = busy
     ? []
     : [
@@ -247,10 +223,10 @@ export default function Intersect({ isOpen, onClose }: Props) {
           variant: "primary",
           onClick: handleIntersect,
           disabled: busy || !layerAId || !layerBId || layerAId === layerBId,
-          loading: busy,
         },
       ];
 
+  // HTML for popupen
   return (
     <Popup isOpen={isOpen} onClose={onClose} title="Intersect" width="narrow" actions={actions}>
       {busy ? (
@@ -265,7 +241,9 @@ export default function Intersect({ isOpen, onClose }: Props) {
       ) : (
         <div className="choose-layer-container">
           <div className="field-group">
+            {/* Velg lag */}
             <div className="choose-layer-text">Velg to polygon-lag</div>
+            {/* Lag A */}
             <div className="choose-layer-text">Lag A</div>
             <div className="dropdown" ref={listARef}>
               <button
@@ -315,6 +293,7 @@ export default function Intersect({ isOpen, onClose }: Props) {
           </div>
 
           <div>
+            {/* Lag B */}
             <div className="choose-layer-text">Lag B</div>
             <div className="dropdown" ref={listBRef}>
               <button

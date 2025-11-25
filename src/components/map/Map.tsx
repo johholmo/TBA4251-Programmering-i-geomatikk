@@ -11,11 +11,12 @@ type LayerEntry = {
   visible: boolean;
 };
 
+// Hovedkartkomponenten som setter opp leaflet kartet og synker lagene
 export default function Map() {
-  const mapRef = useRef<L.Map | null>(null); // leaflet map så vi ikke lager på nytt hver gang
+  const mapRef = useRef<L.Map | null>(null); // Ref til leaflet map så vi ikke lager på nytt hver gang
   const groupRef = useRef<L.LayerGroup | null>(null);
 
-  // kobler sammen react lag og leaflet lag
+  // Kobler sammen react lag og leaflet lag
   const cacheRef = useRef<globalThis.Map<string, LayerEntry>>(
     new globalThis.Map<string, LayerEntry>()
   );
@@ -23,21 +24,22 @@ export default function Map() {
   const { layers } = useLayers();
 
   useEffect(() => {
-    // gjør ingenting om kartet allerede er laget
+    // Gjør ingenting om kartet allerede er laget
     if (mapRef.current) return;
-
+    // Sett opp kartet første gang, med definert center og zoom. Velger sentrum i Trondheim fordi oppgavene er definert allerede
     const map = L.map("map", {
       center: [63.4305, 10.3951],
       zoom: 12,
       preferCanvas: true,
     });
 
+    // Legg til OSM bakgrunnskart fra tile server
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "&copy; OpenStreetMap contributors",
       maxZoom: 19,
     }).addTo(map);
 
-    // Datagruppe så vi slipper å røre bakrgunnskartet og ting går fortere
+    // Lager dtagruppe så vi slipper å røre bakrgunnskartet og ting går fortere
     const dataGroup = L.layerGroup().addTo(map);
 
     mapRef.current = map;

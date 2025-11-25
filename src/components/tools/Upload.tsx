@@ -1,33 +1,29 @@
 import { useRef, useState } from "react";
 import type { FeatureCollection, Geometry } from "geojson";
 import { useLayers } from "../../context/LayersContext";
-import { toWGS84, to25832 } from "../../utils/reproject";
+import { toWGS84, to25832 } from "../../utils/geomaticFunctions";
 import Popup from "../popup/Popup";
+import { isEPSG25832 } from "../../utils/geomaticFunctions";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
 };
 
-// Clean name to save in sidebar
+// Funksjon for å rydde filnavnet til å lagre i sidebaren uten .geojson
 function cleanName(fileName: string) {
   const base = fileName.split(/[\\/]/).pop() || fileName;
   return base.replace(/\.(geo)?json$/i, "");
 }
 
-function isEPSG25832(fc: FeatureCollection<Geometry>): boolean {
-  const crsName = (fc as any).crs?.properties?.name as string | undefined;
-  if (!crsName) return false;
-  return crsName.includes("25832");
-}
-
+// Funksjon for å sjekke om geojson er i CRS84 eller WGS84
 function isCRS84orWGS(fc: FeatureCollection<Geometry>): boolean {
   const crsName = (fc as any).crs?.properties?.name as string | undefined;
   if (crsName && (crsName.includes("4326") || crsName.includes("CRS84"))) {
     return true;
   }
 
-  // Fallback: se på tallene hvis det ikke finnes crs-felt i geojson filen
+  // Se på tallene hvis det ikke finnes crs-felt i geojson filen
   const first = fc.features.find((f) => f.geometry && "coordinates" in f.geometry);
   if (!first || !first.geometry) return false;
 
@@ -35,6 +31,7 @@ function isCRS84orWGS(fc: FeatureCollection<Geometry>): boolean {
   let x: number | undefined;
   let y: number | undefined;
 
+  // Sjekk geometri type for å hente ut koordinater
   if (g.type === "Point") {
     [x, y] = g.coordinates;
   } else if (g.type === "LineString" || g.type === "MultiPoint") {
@@ -53,19 +50,23 @@ function isCRS84orWGS(fc: FeatureCollection<Geometry>): boolean {
 
 export default function Upload({ isOpen, onClose }: Props) {
   const { addLayer } = useLayers();
-  const [busy, setBusy] = useState(false); // used for spinner
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Håndtere opplasting av filer
   async function handleFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
-    setBusy(true);
+
+    setBusy(true); // Sett busy for å få opp spinner når filer lastes opp
     setError(null);
 
     try {
+      // Leser og prosesserer hver fil
       for (const file of Array.from(files)) {
         const text = await file.text();
         const parsed = JSON.parse(text) as FeatureCollection<Geometry>;
+        // Sjekk at filen er en FeatureCollection
         if (parsed.type !== "FeatureCollection") {
           throw new Error(`${file.name}: Filen må være en GeoJSON FeatureCollection.`);
         }
@@ -75,12 +76,12 @@ export default function Upload({ isOpen, onClose }: Props) {
         let sourceCrs: string;
 
         if (isEPSG25832(parsed)) {
-          // hvis i EPSG:25832, reprojiser til WGS84
+          // Hvis i EPSG:25832, reprojiser til WGS84
           geojson25832 = parsed;
           geojson4326 = toWGS84(parsed);
           sourceCrs = "EPSG:25832";
         } else if (isCRS84orWGS(parsed)) {
-          // hvis i CRS84/WGS84, bruk som 4326
+          // Hvis i CRS84 eller WGS84, bruk som 4326
           geojson4326 = parsed;
           geojson25832 = to25832(parsed);
           sourceCrs = "EPSG:4326";
@@ -90,7 +91,7 @@ export default function Upload({ isOpen, onClose }: Props) {
           geojson4326 = toWGS84(parsed);
           sourceCrs = "EPSG:25832";
         }
-
+        // Legger til laget i sidebar
         addLayer({
           name: cleanName(file.name),
           sourceCrs,
@@ -98,17 +99,17 @@ export default function Upload({ isOpen, onClose }: Props) {
           geojson4326,
         });
       }
-      onClose();
+      onClose(); // Lukk popupen etter opplasting
     } catch (e: any) {
       console.error(e);
       setError(e?.message || "Kunne ikke lese GeoJSON.");
     } finally {
-      setBusy(false);
+      setBusy(false); // Fjern busy status etter opplasting
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
 
-  // handling drag and drop
+  // Håndtere drag and drop for opplastning
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     handleFiles(e.dataTransfer.files);

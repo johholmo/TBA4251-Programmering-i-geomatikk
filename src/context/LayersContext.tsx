@@ -1,25 +1,10 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import type { FeatureCollection, Geometry } from "geojson";
+import { randomColor } from "../utils/commonFunctions";
 
-export const LAYER_PALETTE = [
-  "#e11d48",
-  "#f97316",
-  "#eab308",
-  "#22c55e",
-  "#14b8a6",
-  "#0ea5e9",
-  "#6366f1",
-  "#a855f7",
-  "#ec4899",
-  "#f43f5e",
-  "#84cc16",
-  "#0f766e",
-];
+// Håndterer kartlag ved react
 
-function randomColor() {
-  return LAYER_PALETTE[Math.floor(Math.random() * LAYER_PALETTE.length)];
-}
-
+// et kartlag
 export type LayerRecord = {
   id: string;
   name: string;
@@ -30,6 +15,7 @@ export type LayerRecord = {
   color: string;
 };
 
+// typen for hele api-et vi lager
 type LayersContextType = {
   layers: LayerRecord[];
   addLayer: (
@@ -56,9 +42,11 @@ export function useLayers() {
 export function LayersProvider({ children }: { children: ReactNode }) {
   const [layers, setLayers] = useState<LayerRecord[]>([]);
 
+  // bygger API-et
   const api = useMemo<LayersContextType>(
     () => ({
       layers,
+      //legg til lag
       addLayer: (layer) => {
         const id = crypto.randomUUID();
         const color = layer.color ?? randomColor();
@@ -66,13 +54,18 @@ export function LayersProvider({ children }: { children: ReactNode }) {
         setLayers((prev) => [...prev, { id, ...layer, color, visible } as LayerRecord]);
         return id;
       },
+      // fjern lag
       removeLayer: (id) => setLayers((prev) => prev.filter((l) => l.id !== id)),
+      // gjør synlig/usynlig
       setVisibility: (id, visible) =>
         setLayers((prev) => prev.map((l) => (l.id === id ? { ...l, visible } : l))),
+      // endre farge
       setColor: (id, color) =>
         setLayers((prev) => prev.map((l) => (l.id === id ? { ...l, color } : l))),
+      // endre navn
       setName: (id, name) =>
         setLayers((prev) => prev.map((l) => (l.id === id ? { ...l, name } : l))),
+      // endre rekkefølge på lagene
       reorderLayers: (fromIndex, toIndex) =>
         setLayers((prev) => {
           const next = prev.slice();

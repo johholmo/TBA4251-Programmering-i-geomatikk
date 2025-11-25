@@ -16,7 +16,7 @@ export default function Done({
       title="Fullført!"
       actions={[
         { label: "Lukk", variant: "secondary", onClick: onClose },
-        { label: "Start på nytt", variant: "primary", onClick: onAdvance },
+        { label: "Start på nytt", variant: "primary", onClick: onAdvance }, // Clear alle lag når det starter på nytt håndteres i App.tsx
       ]}
     >
       <p>

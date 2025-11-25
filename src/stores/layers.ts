@@ -1,7 +1,11 @@
 import { create } from "zustand";
 import { nanoid } from "nanoid";
 import type { FeatureCollection } from "geojson";
+import { randomPastel } from "../utils/commonFunctions";
 
+// Holder styr på lag i kartet
+
+// Argumenter for hvert lag
 export type Layer = {
   id: string;
   name: string;
@@ -10,6 +14,7 @@ export type Layer = {
   visible: boolean;
 };
 
+// hva som kan gjøres med lagene
 type LayerState = {
   layers: Layer[];
   addLayers: (items: { name: string; data: FeatureCollection }[]) => void;
@@ -20,7 +25,8 @@ type LayerState = {
 };
 
 export const useLayers = create<LayerState>((set) => ({
-  layers: [],
+  layers: [], // ingen lag til å begynne med
+  // legge til lag
   addLayers: (items) =>
     set((state) => ({
       layers: [
@@ -34,20 +40,17 @@ export const useLayers = create<LayerState>((set) => ({
         })),
       ],
     })),
+  // gjøre synlig usynlig
   toggleVisible: (id) =>
     set((state) => ({
       layers: state.layers.map((l) => (l.id === id ? { ...l, visible: !l.visible } : l)),
     })),
+  // skifte farge
   setColor: (id, color) =>
     set((state) => ({
       layers: state.layers.map((l) => (l.id === id ? { ...l, color } : l)),
     })),
+  // fjerne lag
   removeLayer: (id) => set((state) => ({ layers: state.layers.filter((l) => l.id !== id) })),
   clear: () => set({ layers: [] }),
 }));
-
-function randomPastel() {
-  // fine lyse farger som passer paletten
-  const colors = ["#5D866C", "#C2A68C", "#8AA78F", "#B8A089", "#7DA48F"];
-  return colors[Math.floor(Math.random() * colors.length)];
-}

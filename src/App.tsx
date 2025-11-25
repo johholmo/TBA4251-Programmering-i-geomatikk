@@ -10,7 +10,6 @@ import Intersect from "./components/tools/Intersect";
 import Difference from "./components/tools/Difference";
 import AreaFilter from "./components/tools/AreaFilter";
 import { LayersProvider } from "./context/LayersContext";
-
 import Welcome from "./components/tasks/Welcome";
 import Task1 from "./components/tasks/Task1";
 import Task2 from "./components/tasks/Task2";
@@ -24,7 +23,6 @@ import Task9 from "./components/tasks/Task9";
 import Task10 from "./components/tasks/Task10";
 import Task11 from "./components/tasks/Task11";
 import Done from "./components/tasks/Done";
-
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
 
@@ -59,6 +57,7 @@ const taskOrder: TaskKey[] = [
 
 export default function App() {
   const [resetKey, setResetKey] = useState(0);
+  // Show welcome, tour, tasks and done
   const [showWelcome, setShowWelcome] = useState(true);
   const [, setShowTour] = useState(false);
   const [showTask1Intro, setShowTask1Intro] = useState(false);
@@ -75,6 +74,7 @@ export default function App() {
   const [lastTask, setLastTask] = useState<TaskKey>(null);
   const [showDone, setShowDone] = useState(false);
 
+  // Show tools
   const [showUpload, setShowUpload] = useState(false);
   const [showClip, setShowClip] = useState(false);
   const [showBuffer, setShowBuffer] = useState(false);
@@ -83,6 +83,7 @@ export default function App() {
   const [showDifference, setShowDifference] = useState(false);
   const [showAreaFilter, setShowAreaFilter] = useState(false);
 
+  // forrige oppgave
   const goBack = () => {
     if (!lastTask) return;
 
@@ -91,7 +92,7 @@ export default function App() {
 
     const prev = taskOrder[index - 1];
 
-    // Lukk nåværende
+    // Lukk nåværende oppgave
     switch (lastTask) {
       case "task1":
         setShowTask1Intro(false);
@@ -128,7 +129,7 @@ export default function App() {
         break;
     }
 
-    // Åpne forrige
+    // Åpne forrige oppgave
     switch (prev) {
       case "task1":
         setShowTask1Intro(true);
@@ -281,7 +282,7 @@ export default function App() {
     setResetKey((k) => k + 1);
   };
 
-  // Current task knapp øverst til høyre
+  // Pågånde oppgave knapp øverst til høyre
   const handleCurrentTaskClick = () => {
     switch (lastTask) {
       case "task1":
@@ -320,6 +321,8 @@ export default function App() {
           <div className="brand">
             <span className="logo-dot" aria-hidden /> MyGIS
           </div>
+
+          {/* Navbar */}
           <Navbar
             onUploadClick={() => setShowUpload(true)}
             onCurrentTaskClick={handleCurrentTaskClick}
@@ -334,10 +337,12 @@ export default function App() {
           />
         </header>
 
+        {/* Sidebar */}
         <aside className="app-sidebar">
           <Sidebar />
         </aside>
 
+        {/* Kart */}
         <main className="app-main">
           <Map />
         </main>
@@ -351,7 +356,7 @@ export default function App() {
         <Difference isOpen={showDifference} onClose={() => setShowDifference(false)} />
         <AreaFilter isOpen={showAreaFilter} onClose={() => setShowAreaFilter(false)} />
 
-        {/* Welcome og Tour */}
+        {/* Velkomst popup og gjennomgang av verktøy*/}
         <Welcome
           isOpen={showWelcome}
           onClose={() => setShowWelcome(false)}

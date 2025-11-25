@@ -7,6 +7,7 @@ type Props = {
   disabled?: boolean;
 };
 
+// Komponent for knappene for hvert verktøy i navbaren
 export default function ToolbarButton({ id, icon, label, onClick, className, disabled }: Props) {
   return (
     <button

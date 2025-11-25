@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { useLayers } from "../../context/LayersContext";
 import * as turf from "@turf/turf";
 import type { Feature, FeatureCollection, Geometry, Polygon, MultiPolygon } from "geojson";
-import { to25832 } from "../../utils/reproject";
+import { to25832 } from "../../utils/geomaticFunctions";
 import Popup, { type Action } from "../popup/Popup";
-import { isPoly } from "../../utils/geoTools";
+import { isPoly } from "../../utils/geomaticFunctions";
 import { toTransparent } from "../../utils/commonFunctions";
 
 type Props = {
@@ -12,6 +12,7 @@ type Props = {
   onClose: () => void;
 };
 
+// Slår sammen flere polygonlag til ett lag
 export default function Union({ isOpen, onClose }: Props) {
   const { layers, addLayer } = useLayers();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -21,7 +22,7 @@ export default function Union({ isOpen, onClose }: Props) {
   const [isListOpen, setIsListOpen] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
 
-  // lukk ved klikk utenfor
+  // Lukk ved klikk utenfor
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       const target = e.target as Node;
@@ -33,7 +34,7 @@ export default function Union({ isOpen, onClose }: Props) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isListOpen]);
 
-  // reset når popupen lukkes
+  // Reset felt når popupen lukkes
   useEffect(() => {
     if (!isOpen) {
       setSelectedIds([]);
@@ -50,55 +51,57 @@ export default function Union({ isOpen, onClose }: Props) {
   const selectableLayers = polygonLayers.filter((l) => !selectedIds.includes(l.id));
   const hasLayers = polygonLayers.length > 1;
 
+  // Legg til valgte lag
   function addSelected(id: string) {
     setSelectedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
   }
-
+  // Fjern valgte lag
   function removeSelected(id: string) {
     setSelectedIds((prev) => prev.filter((x) => x !== id));
   }
 
+  // Håndterer selve union-operasjonen
   function handleUnion() {
     if (selectedIds.length < 2 || busy) return;
 
-    setBusy(true);
+    setBusy(true); // Start spinner
     setError(null);
 
     setTimeout(() => {
       let success = false;
 
       try {
+        // Valgte lag
         const chosenLayers = layers.filter(
           (l) => selectedIds.includes(l.id) && polygonLayers.some((p) => p.id === l.id)
         );
 
+        // Må ha minst to lag å slå sammen
         if (chosenLayers.length < 2) {
           throw new Error("Velg minst to lag med polygon-geometrier.");
         }
 
         // Samle alle polygon/multipolygon-features i 4326 format
         const allPolyFeatures: Feature<Polygon | MultiPolygon>[] = [];
-
         for (const l of chosenLayers) {
           for (const f of l.geojson4326.features) {
             if (isPoly(f.geometry)) {
               const cloned = {
-                // unngå mutasjon
                 type: "Feature",
                 properties: { ...(f.properties || {}) },
                 geometry: JSON.parse(JSON.stringify(f.geometry)),
               } as Feature<Polygon | MultiPolygon>;
-
               allPolyFeatures.push(cloned);
             }
           }
         }
 
+        // Trenger minst to polygon-geometrier for å lage union
         if (allPolyFeatures.length < 2) {
           throw new Error("Fant ikke nok polygon-geometrier i de valgte lagene til å lage union.");
         }
 
-        // Prøver batch-union med featurecollection
+        // Lag union
         const fc: FeatureCollection<Polygon | MultiPolygon> = {
           type: "FeatureCollection",
           features: allPolyFeatures,
@@ -106,12 +109,13 @@ export default function Union({ isOpen, onClose }: Props) {
 
         let unionFeature: Feature<Polygon | MultiPolygon> | null = null;
 
-        // Try/catch fordi turf tuller seg og dette funker
+        // Try/catch fordi masse trøbbel med turf, men dette funker
         try {
+          // Prøver først med hele featurecollectionen
           unionFeature = (turf as any).union(fc) as Feature<Polygon | MultiPolygon> | null;
         } catch {
           let acc: Feature<Polygon | MultiPolygon> | null = allPolyFeatures[0];
-
+          // Hvis det feiler, gjør det iterativt
           for (let i = 1; i < allPolyFeatures.length; i++) {
             const next = allPolyFeatures[i];
             try {
@@ -131,16 +135,16 @@ export default function Union({ isOpen, onClose }: Props) {
           throw new Error("Klarte ikke å lage union av lagene.");
         }
 
-        // tilbake til featurecollection
+        // Tilbake til featurecollection
         const union4326: FeatureCollection<Geometry> = {
           type: "FeatureCollection",
           features: [unionFeature as Feature<Geometry>],
         };
 
-        // projiser
+        // Projiser til 25832
         const union25832 = to25832(union4326);
 
-        // legg til i sidebar
+        // Legg til i sidebar med fast navn og farge fra første valgte lag
         addLayer({
           name: `UNION_LAYER`,
           sourceCrs: "EPSG:25832",
@@ -155,6 +159,7 @@ export default function Union({ isOpen, onClose }: Props) {
         console.error(e);
         setError(e?.message || "Klarte ikke å lage union.");
       } finally {
+        // Stopp spinner og lukk popup
         setBusy(false);
         if (success) {
           onClose();
@@ -165,6 +170,7 @@ export default function Union({ isOpen, onClose }: Props) {
 
   if (!isOpen) return null;
 
+  // Knappene i popupen
   const actions: Action[] = busy
     ? []
     : [
@@ -174,12 +180,10 @@ export default function Union({ isOpen, onClose }: Props) {
           variant: "primary",
           onClick: handleUnion,
           disabled: busy || selectedIds.length < 2,
-          loading: busy,
         },
       ];
 
-  if (!isOpen) return null;
-
+  // HTML for popupen
   return (
     <Popup isOpen={isOpen} onClose={onClose} title="Union" width="narrow" actions={actions}>
       {busy ? (
@@ -194,6 +198,7 @@ export default function Union({ isOpen, onClose }: Props) {
       ) : (
         <div className="choose-layer-container">
           <div className="field-group">
+            {/* Velg lag */}
             <div className="choose-layer-text">Velg lag som skal slås sammen</div>
 
             {selectedIds.length > 0 && (

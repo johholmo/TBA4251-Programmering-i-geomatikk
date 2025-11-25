@@ -1,5 +1,6 @@
 import ToolbarButton from "./ToolbarButton";
 
+// knapper som kan være i navbaren
 type Props = {
   onUploadClick?: () => void;
   onCurrentTaskClick?: () => void;

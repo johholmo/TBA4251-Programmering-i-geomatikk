@@ -10,11 +10,12 @@ type Props = {
   defaultValue?: string;
 };
 
+// Popup for naming layers
 export default function Naming({
   isOpen,
   onClose,
   onConfirm,
-  title = "Navngi polygonlaget",
+  title = "Navngi datalaget",
   label = "Skriv inn navn:",
   defaultValue = "",
 }: Props) {

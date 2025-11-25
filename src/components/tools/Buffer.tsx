@@ -3,7 +3,7 @@ import { useLayers } from "../../context/LayersContext";
 import * as turf from "@turf/turf";
 import { featureCollection } from "@turf/helpers";
 import type { Feature, Geometry, FeatureCollection as FC } from "geojson";
-import { to25832 } from "../../utils/reproject";
+import { to25832 } from "../../utils/geomaticFunctions";
 import Popup, { type Action } from "../popup/Popup";
 
 type Props = {
@@ -11,6 +11,7 @@ type Props = {
   onClose: () => void;
 };
 
+// Lager buffer rundt valgte geometrier
 export default function Buffer({ isOpen, onClose }: Props) {
   const { layers, addLayer } = useLayers();
   const [selectedLayerId, setSelectedLayerId] = useState("");
@@ -20,7 +21,7 @@ export default function Buffer({ isOpen, onClose }: Props) {
   const [isListOpen, setIsListOpen] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
 
-  // lukk dropdown ved klikk utenfor
+  // Lukk dropdown ved klikk utenfor
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (isListOpen && listRef.current && !listRef.current.contains(e.target as Node)) {
@@ -31,7 +32,7 @@ export default function Buffer({ isOpen, onClose }: Props) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isListOpen]);
 
-  // reset når popupen lukkes
+  // Reset felt når popupen lukkes
   useEffect(() => {
     if (!isOpen) {
       setSelectedLayerId("");
@@ -42,12 +43,13 @@ export default function Buffer({ isOpen, onClose }: Props) {
     }
   }, [isOpen]);
 
+  // Funksjon for å håndtere selve bufferingen
   function handleBuffer() {
     const distance = parseFloat(bufferDistance); // Parse bufferDistance som tall
     if (!selectedLayerId || distance <= 0 || busy) return;
 
     setError(null);
-    setBusy(true);
+    setBusy(true); // Starter busy for å vise spinner
 
     setTimeout(() => {
       let success = false;
@@ -62,11 +64,10 @@ export default function Buffer({ isOpen, onClose }: Props) {
 
         for (const f of layer.geojson4326.features) {
           if (!f.geometry) continue;
-
           const buffered = turf.buffer(f as Feature<Geometry>, distance, {
             units: "meters",
           });
-
+          // Hvis bufferen lykkes, legg til i listen
           if (buffered) {
             bufferedFeatures.push(buffered as Feature<Geometry>);
           }
@@ -79,7 +80,7 @@ export default function Buffer({ isOpen, onClose }: Props) {
         const buffered4326: FC<Geometry> = featureCollection(bufferedFeatures);
         const buffered25832 = to25832(buffered4326);
 
-        // lagrer som nytt lag
+        // Lagrer som nytt lag, med justert navn og samme farge som originalt lag
         addLayer({
           name: `${layer.name}_BUFFER_${distance}m`,
           sourceCrs: "EPSG:25832",
@@ -96,7 +97,7 @@ export default function Buffer({ isOpen, onClose }: Props) {
       } finally {
         setBusy(false);
         if (success) {
-          onClose();
+          onClose(); // Lukker popup hvis suksess
         }
       }
     }, 0);
@@ -107,6 +108,7 @@ export default function Buffer({ isOpen, onClose }: Props) {
   const hasLayers = layers.length > 0;
   const selectedLayer = layers.find((l) => l.id === selectedLayerId) || null;
 
+  // Knappene i popupen
   const actions: Action[] = busy
     ? []
     : [
@@ -124,6 +126,7 @@ export default function Buffer({ isOpen, onClose }: Props) {
         },
       ];
 
+  // HTML for popupen
   return (
     <Popup isOpen={isOpen} onClose={onClose} title="Buffer" width="narrow" actions={actions}>
       {busy ? (
@@ -135,7 +138,7 @@ export default function Buffer({ isOpen, onClose }: Props) {
         <div className="warning-message">Du må laste opp data før du kan lage buffer.</div>
       ) : (
         <div className="choose-layer-container">
-          {/* velg lag */}
+          {/* Velg lag */}
           <div className="field-group">
             <div className="choose-layer-text">Velg laget du vil lage buffer rundt</div>
             <div className="dropdown" ref={listRef}>
@@ -182,7 +185,7 @@ export default function Buffer({ isOpen, onClose }: Props) {
             </div>
           </div>
 
-          {/* buffer-avstand */}
+          {/* Buffer-avstand */}
           <div>
             <label className="choose-layer-text">Buffer-avstand (meter)</label>
             <input

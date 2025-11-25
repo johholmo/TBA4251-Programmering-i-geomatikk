@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import L from "leaflet";
 import "leaflet-draw";
 import { useLayers } from "../../context/LayersContext";
-import { to25832 } from "../../utils/reproject";
+import { to25832 } from "../../utils/geomaticFunctions";
 import Naming from "../popup/NamingPopup";
 
 declare module "leaflet" {
@@ -20,21 +20,21 @@ export default function MapDraw() {
     const checkMapReady = () => {
       const map = (window as any).__leaflet_map as L.Map | undefined;
       if (!map) {
-        setTimeout(checkMapReady, 500); // Retry after 500ms
+        setTimeout(checkMapReady, 500); // Prøv igjen etter 500ms
         return;
       }
 
-      // had some issues, so we make sure leaflet draw is only added once
+      // Hadde litt problemer i utviklingen, så vi sørger for at leaflet draw bare legges til én gang
       if (map._drawControlAdded) return;
       map._drawControlAdded = true;
 
-      // AI: Patch the readableArea function to fix the type reference error
+      // AI: Patcher funksjonen readableArea for å fikse type referansefeilen
       (L as any).GeometryUtil.readableArea = function (area: number, isMetric: boolean) {
         const units = isMetric ? "m²" : "ft²";
         return `${area.toFixed(2)} ${units}`;
       };
 
-      // adding leaflet drawing control to draw polygon in map
+      // Definerer tegneverktøyet fra leaflet for å kunne tegne polygon i kartet
       const drawControl = new (L as any).Control.Draw({
         position: "topleft",
         draw: {
@@ -52,19 +52,19 @@ export default function MapDraw() {
         edit: false,
       });
 
+      // Legger til tegneverktøyet i kartet
       map.addControl(drawControl);
-
       map.on("draw:created", (e: any) => {
         const layer = e.layer;
-
         setNewLayer(layer);
-        setIsNamingOpen(true);
+        setIsNamingOpen(true); // Åpner naming-popup når nytt lag er laget, sånn at brukeren kan navngi
       });
     };
 
     checkMapReady();
   }, [addLayer]);
 
+  // Håndterer når brukeren bekrefter navnet på det nye laget
   const handleNameConfirm = (layerName: string) => {
     if (newLayer) {
       const geojson = newLayer.toGeoJSON();

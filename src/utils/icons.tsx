@@ -1,4 +1,4 @@
-// SVG-ikoner med styling
+// SVG-ikoner med styling - hentet fra SVG repo
 export const IconEye = ({ stroke = "#111" }: { stroke?: string }) => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
     <path

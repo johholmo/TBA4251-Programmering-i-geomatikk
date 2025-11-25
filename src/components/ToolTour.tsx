@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+// et step i en tour
 type Step = { anchorId: string; text: string };
 
 type Props = {
@@ -11,9 +12,10 @@ type Props = {
 };
 
 export default function Tour({ open, steps, onComplete }: Props) {
-  const [index, setIndex] = useState(0); // current step in tour
-  const coachRef = useRef<HTMLDivElement>(null); // ref to box showing the description text
+  const [index, setIndex] = useState(0); // current step
+  const coachRef = useRef<HTMLDivElement>(null); // ref til boksen som viser teksten som beskriver steget
   const [pos, setPos] = useState<{
+    // posisjonen til boksen
     top: number;
     left: number;
     placement: "below" | "above";
@@ -23,21 +25,23 @@ export default function Tour({ open, steps, onComplete }: Props) {
     left: 0,
     placement: "below",
     caretOffsetX: 24,
-  }); // position of box
+  });
 
-  // Start at step 0
+  // Starter på steg 0 når tour åpnes
   useEffect(() => {
     if (open) setIndex(0);
   }, [open]);
 
   const step = steps[index];
   const anchorRect = useMemo(() => {
+    // posisjonen til elementet vi skal feste boksen på
     if (!open || !step) return null;
     const el = document.getElementById(step.anchorId);
     return el ? el.getBoundingClientRect() : null;
   }, [open, step]);
 
   useEffect(() => {
+    // legger til eller fjerner css-klasse for styling på aktivt element i navbaren
     if (!open || !step) return;
     const el = document.getElementById(step.anchorId);
     if (!el) return;
@@ -50,7 +54,7 @@ export default function Tour({ open, steps, onComplete }: Props) {
     else onComplete();
   }
 
-  // Reposition box when scrolling og changing window size
+  // Posisjonerer boksen på nytt ved endring av vindusstørrelse eller scroll
   useEffect(() => {
     if (!open) return;
     const onWin = () => positionCoach();
@@ -62,7 +66,7 @@ export default function Tour({ open, steps, onComplete }: Props) {
     };
   }, [open, step]);
 
-  // place box
+  // Plasserer boksen når den åpnes eller steget endres
   useLayoutEffect(() => {
     if (open) positionCoach();
   }, [open, step]);
@@ -79,6 +83,7 @@ export default function Tour({ open, steps, onComplete }: Props) {
     const coachW = coachEl?.offsetWidth ?? 320;
     const coachH = coachEl?.offsetHeight ?? 120;
 
+    // Sjekk om det er nok plass under eller over
     const enoughSpaceBelow = viewportH - anchorRect.bottom >= coachH + margin + 16;
     const placement: "below" | "above" = enoughSpaceBelow ? "below" : "above";
 

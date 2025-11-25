@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useLayers, LAYER_PALETTE } from "../context/LayersContext";
+import { useLayers } from "../context/LayersContext";
 import { IconEye, IconEyeOff, IconTrash } from "../utils/icons";
+import { LAYER_PALETTE } from "../utils/commonFunctions";
 
-// Sorterbart element
+// Sorterbart element - gjør det mulig å dra elementene i sidebaren
 function SortableItem({
   id,
   children,
@@ -20,6 +21,7 @@ function SortableItem({
     transition,
   };
 
+  // De tre strekene vi drar laget i
   const dragHandle = (
     <div
       {...attributes}
@@ -42,9 +44,9 @@ function SortableItem({
 }
 
 export default function Sidebar() {
-  const { layers, setVisibility, removeLayer, reorderLayers, setColor, setName } = useLayers(); // Henter fra layercontext
+  // henter lagene fra layercontext
+  const { layers, setVisibility, removeLayer, reorderLayers, setColor, setName } = useLayers();
   const sensors = useSensors(useSensor(PointerSensor));
-
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
   const [openPaletteFor, setOpenPaletteFor] = useState<string | null>(null);
@@ -64,12 +66,13 @@ export default function Sidebar() {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [openPaletteFor]);
 
-  // tekst over lagene
+  // info-tekst over lagene
   const tipText =
     layers.length === 0
       ? "Ingen lag lastet."
       : "Dra og slipp lagene for å endre rekkefølgen. Nederst i listen = øverst i kartet. Du kan også endre navn og farge, eller gjøre lagene synlige/usynlige.";
 
+  // drag and drop lagene
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
     if (!over) return;
@@ -79,13 +82,13 @@ export default function Sidebar() {
       reorderLayers(oldIndex, newIndex);
     }
   };
-
+  // endre navn
   const startEdit = (id: string, current: string) => {
     setEditingId(id);
     setDraftName(current);
     setOpenPaletteFor(null);
   };
-
+  // lagre endring av navn
   const commitEdit = () => {
     if (editingId) {
       const trimmed = draftName.trim();

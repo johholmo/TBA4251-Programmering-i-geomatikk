@@ -2,21 +2,22 @@ import { useEffect, useRef, useState } from "react";
 import { useLayers } from "../../context/LayersContext";
 import * as turf from "@turf/turf";
 import type { Feature, FeatureCollection, Geometry, Polygon, MultiPolygon } from "geojson";
-import { to25832 } from "../../utils/reproject";
+import { to25832 } from "../../utils/geomaticFunctions";
 import Popup, { type Action } from "../popup/Popup";
-import { isPoly, unionPolygons, explodeToPolygons } from "../../utils/geoTools";
+import { isPoly, unionPolygons, explodeToPolygons } from "../../utils/geomaticFunctions";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
 };
 
-// finner arealer større enn minAreal
+// Finner arealer større enn minAreal fra input i popupen
 function findAreas(
   fc4326: FeatureCollection<Geometry>,
   minAreal: number
 ): { fc4326: FeatureCollection<Geometry>; fc25832: FeatureCollection<Geometry> } {
   const polys: Feature<Polygon | MultiPolygon>[] = [];
+  // Samle kun polygon-geometrier
   for (const f of fc4326.features) {
     if (isPoly(f.geometry)) {
       polys.push({
@@ -26,14 +27,14 @@ function findAreas(
       });
     }
   }
-
+  // Hvis ingen polygoner, returner tomme feature collections
   if (polys.length === 0) {
     return {
       fc4326: { type: "FeatureCollection", features: [] },
       fc25832: { type: "FeatureCollection", features: [] },
     };
   }
-
+  // Unioner alle polygonene til ett stort polygon
   const unionFeat = unionPolygons(polys);
   if (!unionFeat || !unionFeat.geometry) {
     return {
@@ -41,9 +42,10 @@ function findAreas(
       fc25832: { type: "FeatureCollection", features: [] },
     };
   }
-
+  // Eksploder unionen til enkeltpolygoner
   const singlePolys = explodeToPolygons(unionFeat);
 
+  // Filtrer ut polygoner som er mindre enn minAreal
   const bigPolys: Feature<Geometry>[] = [];
   for (const p of singlePolys) {
     const area = turf.area(p);
@@ -52,6 +54,7 @@ function findAreas(
     }
   }
 
+  // Lag nye feature collections med de store polygonene
   const out4326: FeatureCollection<Geometry> = {
     type: "FeatureCollection",
     features: bigPolys,
@@ -64,6 +67,7 @@ function findAreas(
   };
 }
 
+// Hovedkomponent for AreaFilter-verktøyet
 export default function AreaFilter({ isOpen, onClose }: Props) {
   const { layers, addLayer } = useLayers();
 
@@ -81,7 +85,7 @@ export default function AreaFilter({ isOpen, onClose }: Props) {
   const hasLayers = polygonLayers.length > 0;
   const selectedLayer = polygonLayers.find((l) => l.id === selectedLayerId) || null;
 
-  // lukk dropdown ved klikk utenfor
+  // Lukk dropdown ved klikk utenfor
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       const target = e.target as Node;
@@ -93,7 +97,7 @@ export default function AreaFilter({ isOpen, onClose }: Props) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isListOpen]);
 
-  // reset når popup lukkes
+  // Reset felt når popup lukkes
   useEffect(() => {
     if (!isOpen) {
       setSelectedLayerId("");
@@ -104,26 +108,28 @@ export default function AreaFilter({ isOpen, onClose }: Props) {
     }
   }, [isOpen]);
 
+  // Hovedfunksjon for å finne og lage nytt lag med store områder
   async function handleRun() {
     const minAreaM2 = parseFloat(minArea);
     if (!selectedLayerId || !Number.isFinite(minAreaM2) || minAreaM2 <= 0 || busy) return;
 
     setError(null);
-    setBusy(true);
+    setBusy(true); // Starter busy for å vise spinner
 
     try {
       const layer = polygonLayers.find((l) => l.id === selectedLayerId);
       if (!layer) throw new Error("Fant ikke valgt lag.");
 
+      // Finn store områder
       const { fc4326, fc25832 } = findAreas(layer.geojson4326, minAreaM2);
 
+      // Hvis ingen områder funnet, sett errormelding
       if (!fc4326.features.length) {
         setError(`Fant ingen sammenhengende områder ≥ ${minAreaM2.toLocaleString("nb-NO")} m².`);
         return;
       }
-
+      // Legg til nytt lag med de store områdene med justert navn
       const newName = `${layer.name}_AREA_≥${minAreaM2}m2`;
-
       addLayer({
         name: newName,
         sourceCrs: "EPSG:25832",
@@ -138,12 +144,13 @@ export default function AreaFilter({ isOpen, onClose }: Props) {
       console.error(e);
       setError(e?.message || "Klarte ikke å finne store sammenhengende områder.");
     } finally {
-      setBusy(false);
+      setBusy(false); // Stopp busy/spinner
     }
   }
 
   if (!isOpen) return null;
 
+  // Input og knapper i popupen
   const minAreaValue = parseFloat(minArea);
   const actions: Action[] = busy
     ? []
@@ -162,6 +169,7 @@ export default function AreaFilter({ isOpen, onClose }: Props) {
         },
       ];
 
+  // HTML for popupen
   return (
     <Popup
       isOpen={isOpen}
@@ -182,6 +190,7 @@ export default function AreaFilter({ isOpen, onClose }: Props) {
       ) : (
         <div className="choose-layer-container">
           <div className="field-group">
+            {/* Velg lag*/}
             <div className="choose-layer-text">Velg polygonlag</div>
             <div className="dropdown" ref={listRef}>
               <button
@@ -227,6 +236,7 @@ export default function AreaFilter({ isOpen, onClose }: Props) {
             </div>
           </div>
 
+          {/* Min areal input */}
           <div>
             <label className="choose-layer-text">Minimum areal (m²)</label>
             <input

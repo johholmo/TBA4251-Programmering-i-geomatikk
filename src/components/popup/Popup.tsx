@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
 
+// Typer handlinger -> nederst i popupen som knapper
 export type Action = {
   label: string;
   disabled?: boolean;
-  loading?: boolean;
   onClick: () => void;
   variant?: "primary" | "secondary" | "ghost";
 };
@@ -17,9 +17,11 @@ type Props = {
   width?: "normal" | "narrow";
 };
 
+// Felles popup komponent for å bruke i alle oppgaver og verktøy
 export default function Popup({ isOpen, onClose, title, actions = [], children, width }: Props) {
   const popupRef = useRef<HTMLDivElement>(null);
 
+  // Lukker hvis brukeren trykker "esc"
   useEffect(() => {
     if (!isOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -38,7 +40,7 @@ export default function Popup({ isOpen, onClose, title, actions = [], children, 
       aria-modal="true"
       aria-labelledby="modal-title"
       onMouseDown={(e) => {
-        // close when clicking outside content
+        // clukker hvis det trykkes utenfor popupen
         if (e.target === e.currentTarget) onClose();
       }}
     >
@@ -55,6 +57,7 @@ export default function Popup({ isOpen, onClose, title, actions = [], children, 
           <div className="modal-content">{children}</div>
         </div>
 
+        {/* Knapper */}
         <div className="modal-actions">
           {actions.map((a, i) => (
             <button
@@ -63,15 +66,14 @@ export default function Popup({ isOpen, onClose, title, actions = [], children, 
                 a.variant === "primary"
                   ? "btn-primary"
                   : a.variant === "secondary"
-                  ? "btn-secondary"
-                  : "btn-ghost"
+                    ? "btn-secondary"
+                    : "btn-ghost"
               }`}
               onClick={a.onClick}
               type="button"
-              disabled={a.disabled || a.loading}
-              aria-busy={a.loading ? true : undefined}
+              disabled={a.disabled}
             >
-              {a.loading ? <span className="btn-spinner" aria-hidden="true" /> : a.label}
+              {a.label}
             </button>
           ))}
         </div>
