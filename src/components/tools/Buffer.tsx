@@ -128,7 +128,14 @@ export default function Buffer({ isOpen, onClose }: Props) {
 
   // HTML for popupen
   return (
-    <Popup isOpen={isOpen} onClose={onClose} title="Buffer" width="narrow" actions={actions}>
+    <Popup
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Buffer"
+      width="narrow"
+      actions={actions}
+      hideCloseIcon={busy}
+    >
       {busy ? (
         <div className="busy-container">
           <div className="spinner" />

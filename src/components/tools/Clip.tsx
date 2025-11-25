@@ -14,9 +14,8 @@ import type {
 import cleanCoords from "@turf/clean-coords";
 import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
 import booleanIntersects from "@turf/boolean-intersects";
-import { to25832 } from "../../utils/reproject";
 import Popup, { type Action } from "../popup/Popup";
-import { isPoly, turfIntersect } from "../../utils/geoTools";
+import { isPoly, turfIntersect, to25832 } from "../../utils/geomaticFunctions";
 import { toTransparent } from "../../utils/commonFunctions";
 
 type Props = {
@@ -24,21 +23,21 @@ type Props = {
   onClose: () => void;
 };
 
+// Klipper valgte lag mot et maskelag
+// Maskelag er laget som ble tegnet som polygon i kartet
 export default function Clip({ isOpen, onClose }: Props) {
   const { layers, addLayer } = useLayers();
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
-
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [maskId, setMaskId] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const [isListOpen, setIsListOpen] = useState(false);
   const [isMaskOpen, setIsMaskOpen] = useState(false);
   const sourceWrapperRef = useRef<HTMLDivElement | null>(null);
   const maskWrapperRef = useRef<HTMLDivElement | null>(null);
 
-  // lukker hvis det klikkes utenfor
+  // Lukker hvis det klikkes utenfor
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       const target = e.target as Node;
@@ -53,7 +52,7 @@ export default function Clip({ isOpen, onClose }: Props) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isListOpen, isMaskOpen]);
 
-  // reset når popupen lukkes
+  // Reset når popupen lukkes
   useEffect(() => {
     if (!isOpen) {
       setBusy(false);
@@ -65,7 +64,8 @@ export default function Clip({ isOpen, onClose }: Props) {
     }
   }, [isOpen]);
 
-  const candidateMaskLayers = useMemo(
+  // Lagene som kan brukes som maskelag (polygon/multipolygon)
+  const optionsMaskLayers = useMemo(
     () =>
       layers.filter((l) => l.geojson4326.features.some((f) => f.geometry && isPoly(f.geometry))),
     [layers]
@@ -73,18 +73,20 @@ export default function Clip({ isOpen, onClose }: Props) {
   const selectableSourceLayers = layers.filter((l) => !selectedIds.includes(l.id));
   const noLayers = layers.length === 0;
 
+  // Funksjon for å legge til valgte lag
   const addToSelected = (id: string) => {
     if (!id) return;
     setSelectedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
   };
+  // Funksjon for å fjerne valgte lag
   const removeFromSelected = (id: string) => {
     setSelectedIds((prev) => prev.filter((x) => x !== id));
   };
 
-  // AI til hjelp for å håndtere klipping sekvensielt
+  // Håndterer selve klippe-operasjonen (hjelp fra AI for å gjøre set sekvensielt)
   function handleClip() {
     if (!maskId || selectedIds.length === 0 || busy) return;
-
+    // Finner maskelaget
     const maskLayer = layers.find((l) => l.id === maskId);
     if (!maskLayer) {
       setError("Fant ikke maskelaget.");
@@ -104,11 +106,11 @@ export default function Clip({ isOpen, onClose }: Props) {
     const sourceIds = [...selectedIds];
     const total = sourceIds.length;
 
-    setBusy(true);
+    setBusy(true); // Starter spinner
     setError(null);
-    setProgress({ current: 0, total });
+    setProgress({ current: 1, total });
 
-    // Prosesser ett lag av gangen med setTimeout slik at UI ikke fryser
+    // Prosesser ett lag av gangen med setTimeout slik at det ikke ser fryst ut for brukeren
     const processLayer = (index: number) => {
       if (index >= total) {
         // Ferdig med alle lag
@@ -130,6 +132,7 @@ export default function Clip({ isOpen, onClose }: Props) {
         return;
       }
 
+      // Begynn klipping
       try {
         const outFeatures4326: Feature<Geometry>[] = [];
 
@@ -155,7 +158,7 @@ export default function Clip({ isOpen, onClose }: Props) {
                   properties: feature.properties || {},
                   geometry: srcGeom,
                 };
-
+                // Sjekk om de faktisk intersecter før klipping
                 const hasIntersection = booleanIntersects(maskFeat as any, srcFeat as any);
                 if (!hasIntersection) continue;
 
@@ -164,9 +167,9 @@ export default function Clip({ isOpen, onClose }: Props) {
                 try {
                   clipped = turfIntersect(maskFeat as any, srcFeat as any);
                 } catch {
+                  // Prøver å rense koordinatene hvis turf feiler (tips fra AI)
                   const cleanedMask = cleanCoords(maskGeom as any) as Polygon | MultiPolygon;
                   const cleanedSrc = cleanCoords(srcGeom as any) as Polygon | MultiPolygon;
-
                   const cleanedMaskFeat = {
                     type: "Feature" as const,
                     properties: {},
@@ -179,17 +182,18 @@ export default function Clip({ isOpen, onClose }: Props) {
                   };
 
                   try {
+                    // Prøver klipping igjen med rensede geometrier
                     clipped = turfIntersect(cleanedMaskFeat as any, cleanedSrcFeat as any);
                   } catch {
                     continue;
                   }
                 }
-
+                // Legg til i output hvis det ble noe klippet ut
                 if (clipped && clipped.geometry) {
                   const alreadyAdded = outFeatures4326.some(
                     (f) => JSON.stringify(f.geometry) === JSON.stringify(clipped!.geometry)
                   );
-
+                  // Unngå duplikater
                   if (!alreadyAdded) {
                     outFeatures4326.push({
                       type: "Feature",
@@ -206,7 +210,6 @@ export default function Clip({ isOpen, onClose }: Props) {
                   properties: {},
                   geometry: maskFeature.geometry,
                 };
-
                 const lineFeat = {
                   type: "Feature" as const,
                   properties: feature.properties || {},
@@ -214,12 +217,12 @@ export default function Clip({ isOpen, onClose }: Props) {
                 };
 
                 const intersects = booleanIntersects(maskFeat as any, lineFeat as any);
-
+                // Hvis de intersecter, legg til i output
                 if (intersects) {
                   const alreadyAdded = outFeatures4326.some(
                     (f) => JSON.stringify(f.geometry) === JSON.stringify(feature.geometry)
                   );
-
+                  // Unngå duplikater
                   if (!alreadyAdded) {
                     outFeatures4326.push(lineFeat as Feature<Geometry>);
                   }
@@ -232,12 +235,12 @@ export default function Clip({ isOpen, onClose }: Props) {
                   feature.geometry as any,
                   maskFeature.geometry as any
                 );
-
+                // Hvis punktet er innenfor polygonet, legg til i output
                 if (isInside) {
                   const alreadyAdded = outFeatures4326.some(
                     (f) => JSON.stringify(f.geometry) === JSON.stringify(feature.geometry)
                   );
-
+                  // Unngå duplikater
                   if (!alreadyAdded) {
                     outFeatures4326.push(feature as Feature<Geometry>);
                   }
@@ -245,19 +248,18 @@ export default function Clip({ isOpen, onClose }: Props) {
                 }
               }
             } catch (err) {
-              console.warn(`Error processing ${geomType} feature:`, err);
+              console.warn(`Det skjedde en feil når ${geomType} ble forsøkt klippet:`, err);
             }
           }
         }
 
+        // Legg til nytt lag med navn, projisering og farge hvis det ble noen features etter klipping
         if (outFeatures4326.length > 0) {
           const outFC4326: FeatureCollection<Geometry> = {
             type: "FeatureCollection",
             features: outFeatures4326,
           };
-
           const outFC25832 = to25832(outFC4326);
-
           addLayer({
             name: `${src.name}_CLIP`,
             sourceCrs: "EPSG:25832",
@@ -267,7 +269,7 @@ export default function Clip({ isOpen, onClose }: Props) {
             visible: true,
           });
         } else {
-          console.log(`No overlap found for layer: ${src.name}`);
+          console.log(`Ingen overlapp funnet for: ${src.name}`);
         }
       } catch (e: any) {
         console.error(e);
@@ -285,6 +287,7 @@ export default function Clip({ isOpen, onClose }: Props) {
 
   if (!isOpen) return null;
 
+  // Knappene i popupen
   const actions: Action[] = busy
     ? []
     : [
@@ -302,15 +305,23 @@ export default function Clip({ isOpen, onClose }: Props) {
         },
       ];
 
+  // HTML for popupen
   return (
-    <Popup isOpen={isOpen} onClose={onClose} title="Clip" width="narrow" actions={actions}>
+    <Popup
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Clip"
+      width="narrow"
+      actions={actions}
+      hideCloseIcon={busy}
+    >
       {busy ? (
         <div className="busy-container">
           <div className="spinner" />
           <div className="busy-text">
             Klipper...
             {progress && (
-              <div style={{ fontSize: 12, marginTop: 4 }}>
+              <div style={{ fontSize: 14, marginTop: 6, textAlign: "center" }}>
                 Lag {progress.current} av {progress.total}
               </div>
             )}
@@ -326,7 +337,7 @@ export default function Clip({ isOpen, onClose }: Props) {
             <>
               <div className="field-group">
                 <div className="choose-layer-text">Velg hvilke lag som skal klippes</div>
-
+                {/*/ Valgte lag */}
                 {selectedIds.length > 0 && (
                   <div className="selected-layers">
                     {selectedIds.map((id) => {
@@ -352,6 +363,7 @@ export default function Clip({ isOpen, onClose }: Props) {
                   </div>
                 )}
 
+                {/* Dropdown */}
                 <div className="dropdown" ref={sourceWrapperRef}>
                   <button
                     type="button"
@@ -397,8 +409,7 @@ export default function Clip({ isOpen, onClose }: Props) {
                   >
                     <span className="dropdown-text">
                       {maskId
-                        ? (candidateMaskLayers.find((l) => l.id === maskId)?.name ??
-                          "Velg maskelag…")
+                        ? (optionsMaskLayers.find((l) => l.id === maskId)?.name ?? "Velg maskelag…")
                         : "Velg maskelag…"}
                     </span>
                     <span aria-hidden className="dropdown-hidden">
@@ -406,9 +417,9 @@ export default function Clip({ isOpen, onClose }: Props) {
                     </span>
                   </button>
 
-                  {isMaskOpen && candidateMaskLayers.length > 0 && (
+                  {isMaskOpen && optionsMaskLayers.length > 0 && (
                     <div className="clip-dropdown-scroll">
-                      {candidateMaskLayers
+                      {optionsMaskLayers
                         .filter((l) => !selectedIds.includes(l.id))
                         .map((l) => (
                           <button

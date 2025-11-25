@@ -177,6 +177,7 @@ export default function AreaFilter({ isOpen, onClose }: Props) {
       title="Store sammenhengende områder"
       width="narrow"
       actions={actions}
+      hideCloseIcon={busy}
     >
       {busy ? (
         <div className="busy-container">

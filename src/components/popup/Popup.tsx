@@ -15,10 +15,19 @@ type Props = {
   actions?: Action[];
   children?: React.ReactNode;
   width?: "normal" | "narrow";
+  hideCloseIcon?: boolean;
 };
 
 // Felles popup komponent for å bruke i alle oppgaver og verktøy
-export default function Popup({ isOpen, onClose, title, actions = [], children, width }: Props) {
+export default function Popup({
+  isOpen,
+  onClose,
+  title,
+  actions = [],
+  children,
+  width,
+  hideCloseIcon,
+}: Props) {
   const popupRef = useRef<HTMLDivElement>(null);
 
   // Lukker hvis brukeren trykker "esc"
@@ -47,10 +56,11 @@ export default function Popup({ isOpen, onClose, title, actions = [], children, 
       <div className={`modal ${width === "narrow" ? "modal--narrow" : ""}`} ref={popupRef}>
         <div className="modal-header">
           <h2 className="modal-title">{title}</h2>
-
-          <button className="modal-close" onClick={onClose} aria-label="Lukk">
-            ✕
-          </button>
+          {!hideCloseIcon && (
+            <button className="modal-close" onClick={onClose} aria-label="Lukk">
+              ✕
+            </button>
+          )}
         </div>
 
         <div className="modal-body">
