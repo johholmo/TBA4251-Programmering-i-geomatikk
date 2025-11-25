@@ -5,7 +5,7 @@ import cleanCoords from "@turf/clean-coords";
 import bbox from "@turf/bbox";
 import booleanIntersects from "@turf/boolean-intersects";
 import Popup, { type Action } from "../popup/Popup";
-import { isPoly, turfDifference, to25832, unionPolygons } from "../../utils/geomaticFunctions";
+import { isPoly, turfDifference, to25832 } from "../../utils/geomaticFunctions";
 
 type Props = {
   isOpen: boolean;
@@ -87,6 +87,7 @@ export default function Difference({ isOpen, onClose }: Props) {
         // Samle polygoner i A og B
         const featsA: Feature<Polygon | MultiPolygon>[] = [];
         const featsB: Feature<Polygon | MultiPolygon>[] = [];
+
         for (const f of layerA.geojson4326.features) {
           if (isPoly(f.geometry)) {
             featsA.push({
@@ -96,6 +97,7 @@ export default function Difference({ isOpen, onClose }: Props) {
             });
           }
         }
+
         for (const f of layerB.geojson4326.features) {
           if (isPoly(f.geometry)) {
             featsB.push({
@@ -111,103 +113,95 @@ export default function Difference({ isOpen, onClose }: Props) {
           throw new Error("Manglende polygon-geometrier i ett eller begge lag.");
         }
 
-        // Unioner alle polygoner i B til en maske for å få det til å gå raskere
-        const unionB = unionPolygons(featsB);
-        if (!unionB || !unionB.geometry) {
-          throw new Error("Klarte ikke å lage samlet polygonmaske for lag B.");
-        }
+        // Pre-beregn bbox for alle B-features (slik at det ikke gjøres for hvert A-polygon)
+        const featsBWithBbox = featsB.map((fb) => ({
+          feature: fb,
+          bbox: bbox(fb.geometry as any),
+        }));
 
-        const maskB: Feature<Polygon | MultiPolygon> = {
-          type: "Feature",
-          properties: {},
-          geometry: unionB.geometry,
-        };
-
-        const bbB = bbox(maskB.geometry as any);
         const outFeatures: Feature<Geometry>[] = [];
 
-        // For hvert A-polygon, trekk fra unionen av alle B-polygoner
+        // For hvert A-polygon, trekk fra alle B-polygoner ett og ett
         for (const fa of featsA) {
           let currentGeom: Polygon | MultiPolygon | null = fa.geometry || null;
           if (!currentGeom) continue;
 
-          // Kjapp bbox-test mot union-B
-          const bbA = bbox(currentGeom as any);
-          const overlapBBox =
-            bbA[0] <= bbB[2] && bbA[2] >= bbB[0] && bbA[1] <= bbB[3] && bbA[3] >= bbB[1];
+          for (const { feature: fb, bbox: bbB } of featsBWithBbox) {
+            if (!currentGeom) break; // A er sjekket ferdig
 
-          if (!overlapBBox) {
-            // Ingenting å trekke fra, legg A rett i output
-            outFeatures.push({
-              type: "Feature",
-              properties: { ...(fa.properties || {}) },
-              geometry: currentGeom as Geometry,
-            });
-            continue;
-          }
+            const geomB = fb.geometry;
+            if (!geomB) continue;
 
-          // Mer nøyaktig intersect-test
-          const intersects = booleanIntersects(
-            { type: "Feature", properties: {}, geometry: currentGeom } as any,
-            maskB as any
-          );
+            // Sjekker først om bounding boxer overlapper
+            const bbA = bbox(currentGeom as any);
+            const overlapBBox =
+              bbA[0] <= bbB[2] && bbA[2] >= bbB[0] && bbA[1] <= bbB[3] && bbA[3] >= bbB[1];
 
-          if (!intersects) {
-            // Ingen faktisk overlapp, behold A som den er
-            outFeatures.push({
-              type: "Feature",
-              properties: { ...(fa.properties || {}) },
-              geometry: currentGeom as Geometry,
-            });
-            continue;
-          }
+            if (!overlapBBox) {
+              // ingen overlapp i det hele tatt
+              continue;
+            }
 
-          // Prøver difference: A - union(B)
-          try {
-            const res = turfDifference(
-              {
+            // Sjekker så med mer nøyaktig intersect
+            const intersects = booleanIntersects(
+              { type: "Feature", properties: {}, geometry: currentGeom } as any,
+              { type: "Feature", properties: {}, geometry: geomB } as any
+            );
+            if (!intersects) {
+              // ingen faktisk overlapp
+              continue;
+            }
+
+            // Prøver difference: currentGeom - geomB
+            try {
+              const res = turfDifference(
+                {
+                  type: "Feature",
+                  properties: {},
+                  geometry: currentGeom,
+                } as Feature<Polygon | MultiPolygon>,
+                fb as Feature<Polygon | MultiPolygon>
+              );
+
+              if (!res || !res.geometry) {
+                // Hele currentGeom inni B, så vi har ingenting igjen
+                currentGeom = null;
+                break;
+              }
+
+              currentGeom = res.geometry;
+            } catch (err1) {
+              // Hvis trøbbel med turf, prøv å rense geometrier først
+              const cleanedA = cleanCoords(currentGeom as any) as Polygon | MultiPolygon;
+              const cleanedB = cleanCoords(geomB as any) as Polygon | MultiPolygon;
+
+              const featCleanA: Feature<Polygon | MultiPolygon> = {
                 type: "Feature",
                 properties: {},
-                geometry: currentGeom,
-              } as Feature<Polygon | MultiPolygon>,
-              maskB as Feature<Polygon | MultiPolygon>
-            );
+                geometry: cleanedA,
+              };
+              const featCleanB: Feature<Polygon | MultiPolygon> = {
+                type: "Feature",
+                properties: {},
+                geometry: cleanedB,
+              };
 
-            if (!res || !res.geometry) {
-              // Hele currentGeom inni B, så vi har ingenting igjen
-              currentGeom = null;
-            } else {
-              currentGeom = res.geometry;
-            }
-          } catch (err1) {
-            // Hvis trøbbel med turf, prøv å rense geometrier først
-            const cleanedA = cleanCoords(currentGeom as any) as Polygon | MultiPolygon;
-            const cleanedB = cleanCoords(maskB.geometry as any) as Polygon | MultiPolygon;
-
-            const featCleanA: Feature<Polygon | MultiPolygon> = {
-              type: "Feature",
-              properties: {},
-              geometry: cleanedA,
-            };
-            const featCleanB: Feature<Polygon | MultiPolygon> = {
-              type: "Feature",
-              properties: {},
-              geometry: cleanedB,
-            };
-
-            try {
-              const res = turfDifference(featCleanA, featCleanB);
-              if (!res || !res.geometry) {
-                currentGeom = null;
-              } else {
+              try {
+                // Prøver difference igjen med rensede geometrier
+                const res = turfDifference(featCleanA, featCleanB);
+                if (!res || !res.geometry) {
+                  currentGeom = null;
+                  break;
+                }
                 currentGeom = res.geometry;
+              } catch {
+                // Hvis det fortsatt feiler: la currentGeom være som den er og gå videre til neste B
+                continue;
               }
-            } catch {
-              // Hvis det fortsatt feiler, la geometri være uendret
             }
           }
 
-          // Etter å ha trukket fra union-B, legg til i output hvis noe er igjen
+          // Etter å ha trukket fra alle B, legg til i output hvis noe er igjen
           if (currentGeom) {
             outFeatures.push({
               type: "Feature",

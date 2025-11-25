@@ -4,8 +4,9 @@ import type { Feature, FeatureCollection, Geometry, Polygon, MultiPolygon } from
 import cleanCoords from "@turf/clean-coords";
 import bbox from "@turf/bbox";
 import booleanIntersects from "@turf/boolean-intersects";
-import { to25832, isPoly, turfIntersect } from "../../utils/geomaticFunctions";
+import { to25832 } from "../../utils/geomaticFunctions";
 import Popup, { type Action } from "../popup/Popup";
+import { isPoly, turfIntersect } from "../../utils/geomaticFunctions";
 
 type Props = {
   isOpen: boolean;
@@ -99,6 +100,10 @@ export default function Intersect({ isOpen, onClose }: Props) {
           }
         }
 
+        if (featsA.length === 0 || featsB.length === 0) {
+          throw new Error("Manglende polygon-geometrier i ett eller begge lag.");
+        }
+
         const outFeatures: Feature<Geometry>[] = [];
         const seenGeoms = new Set<string>();
 
@@ -120,10 +125,11 @@ export default function Intersect({ isOpen, onClose }: Props) {
 
             if (!geomA || !geomB) continue;
 
-            // Kjapp bbox-sjekk
+            // Se om bounding boxes overlapper
             const overlap =
               bbA[0] <= bbB[2] && bbA[2] >= bbB[0] && bbA[1] <= bbB[3] && bbA[3] >= bbB[1];
 
+            // Hvis ingen overlapp, fortsett
             if (!overlap) continue;
 
             // Sjekk om de faktisk intersecter
@@ -132,6 +138,7 @@ export default function Intersect({ isOpen, onClose }: Props) {
               { type: "Feature", properties: {}, geometry: geomB } as any
             );
 
+            // Hvis ikke intersect, fortsett
             if (!inters) continue;
 
             // Prøver å finne intersect
@@ -139,8 +146,8 @@ export default function Intersect({ isOpen, onClose }: Props) {
 
             try {
               clipped = turfIntersect(fa as any, fb as any);
-            } catch {
-              // Hvis trøbbel med turf, prøv å rense geometrier først (tips fra AI)
+            } catch (err1) {
+              // Hvis trøbbel med turf, prøv å rense geometrier først
               const cleanedA = cleanCoords(geomA as any) as Polygon | MultiPolygon;
               const cleanedB = cleanCoords(geomB as any) as Polygon | MultiPolygon;
 
@@ -155,10 +162,11 @@ export default function Intersect({ isOpen, onClose }: Props) {
                 geometry: cleanedB,
               };
 
+              // Prøver på nytt med renset geometri
               try {
                 clipped = turfIntersect(featCleanA as any, featCleanB as any);
               } catch {
-                clipped = null;
+                continue;
               }
             }
 
@@ -174,7 +182,7 @@ export default function Intersect({ isOpen, onClose }: Props) {
               ...(fa.properties || {}),
               ...(fb.properties || {}),
             };
-
+            // Legger til merget i output
             outFeatures.push({
               type: "Feature",
               properties: mergedProps,
@@ -270,7 +278,7 @@ export default function Intersect({ isOpen, onClose }: Props) {
                     ? (polygonLayers.find((l) => l.id === layerAId)?.name ?? "Velg lag A…")
                     : "Velg lag A…"}
                 </span>
-                <span area-hidden className="dropdown-hidden">
+                <span aria-hidden className="dropdown-hidden">
                   ▾
                 </span>
               </button>
@@ -320,7 +328,7 @@ export default function Intersect({ isOpen, onClose }: Props) {
                     ? (polygonLayers.find((l) => l.id === layerBId)?.name ?? "Velg lag B…")
                     : "Velg lag B…"}
                 </span>
-                <span area-hidden className="dropdown-hidden">
+                <span aria-hidden className="dropdown-hidden">
                   ▾
                 </span>
               </button>
