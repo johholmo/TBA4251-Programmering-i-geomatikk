@@ -18,19 +18,17 @@ export default function Task7({ isOpen, onClose, onBack, onAdvance }: Props7) {
         { label: "Neste oppgave", variant: "primary", onClick: onAdvance },
       ]}
     >
+      <p>Det er selvsagt heller ikke så lurt å bygge i eller rundt en flomfaresone.</p>
+
       <p>
-        Vi vil heller ikke bygge i eller rundt en flomfaresone. For å være på den sikre siden legger
-        vi til en avstand på <strong>100 meter</strong> rundt disse sonene.
+        Last opp datasett <strong>Flomsoner</strong>, klipp det AOI, og lag en buffer på 100 meter
+        rundt flomsonene. Navngi bufferlaget for eksempel <em>Flomfaresoner</em>.
       </p>
 
       <p>
-        Last opp datasett <strong>Flomsoner</strong>, klipp til AOI, og lag en buffer på 100 meter
-        rundt. Navngi bufferlaget for eksempel <em>Faresoner</em>.
-      </p>
-
-      <p>
-        Fjern faresonene fra <strong>AOI_Trondheim</strong> ved hjelp av <strong>Difference</strong>
-        -verktøyet slik at vi ikke bygger i disse områdene.
+        Fjern flomfaresonene fra <strong>AOI_Trondheim</strong> ved hjelp av{" "}
+        <strong>Difference</strong>
+        -verktøyet slik at det ikke bygges i disse områdene.
       </p>
     </Popup>
   );

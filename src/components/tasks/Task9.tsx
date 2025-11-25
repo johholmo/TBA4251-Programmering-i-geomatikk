@@ -19,18 +19,19 @@ export default function Task9({ isOpen, onClose, onBack, onAdvance }: Props9) {
       ]}
     >
       <p>
-        Nå har vi fjernet de områdene det ikke er aktuelt å bygge på, men hva med områder vi ønsker
-        å bygge i?
+        Nå har du fjernet alle de områdene det ikke er aktuelt å bygge på, men hva med områder det
+        er ønskelig å bygge på?
       </p>
 
       <p>
         SiT ønsker at studentboligene skal ligge innenfor <strong>1 kilometer</strong> fra et
-        NTNU-campus. La oss finne disse områdene!
+        NTNU-campus. La oss først finne disse områdene!
       </p>
 
       <p>
         Last opp datalaget <strong>NTNU_campuser</strong>. Bruk <strong>Buffer</strong> til å lage
-        en buffer på <strong>1000 meter</strong> rundt NTNU-campusene.
+        en buffer på <strong>1000 meter</strong> rundt NTNU-campusene. Navngi laget for eksempel{" "}
+        <em>Ønskede bygningsområder</em>.
       </p>
     </Popup>
   );

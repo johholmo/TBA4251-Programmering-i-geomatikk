@@ -20,8 +20,8 @@ export default function Done({
       ]}
     >
       <p>
-        🎉 Gratulerer! Du har fullført hele analysen og funnet de mest egnede områdene for nye
-        studentboliger i Trondheim. Dette blir nok SiT veldig glad for!
+        🎉 Gratulerer! Du har fullført hele analysen og funnet de områdene i Trondheim som er best
+        egnet for utbygging av nye studentboliger. Dette blir nok SiT veldig glad for!
       </p>
 
       <p>Vil du starte på nytt eller utforske kartet videre?</p>

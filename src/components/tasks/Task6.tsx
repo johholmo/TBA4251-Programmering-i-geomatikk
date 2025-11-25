@@ -19,8 +19,8 @@ export default function Task6({ isOpen, onClose, onBack, onAdvance }: Props6) {
       ]}
     >
       <p>
-        Ettersom vi ikke ønsker å bygge i vannområder eller innenfor bufferen, skal vi nå fjerne
-        disse områdene fra <strong>AOI_Trondheim</strong>-laget vårt.
+        Du har nå laget en sone rundt vannområdene som det ikke skal bygges i. Derfor kan du fjerne
+        disse områdene fra <strong>AOI_Trondheim</strong>-laget.
       </p>
 
       <p>
@@ -28,7 +28,17 @@ export default function Task6({ isOpen, onClose, onBack, onAdvance }: Props6) {
         (vannområder med buffer) fra <strong>AOI_Trondheim</strong>.
       </p>
 
-      <p>Da sitter du igjen med et lag som viser områder som fortsatt kan være aktuelle.</p>
+      <p>
+        Det nye laget som dukker opp i oversikten til venstre er da et lag som viser områder som
+        fortsatt kan være aktuelle å bygge i. Du kan da slette det opprinnelige{" "}
+        <strong>AOI_Trondheim</strong>-laget, og navngi det nye passende for å holde oversikt (for
+        eksempel <em>"Mulige byggeområder"</em>).
+      </p>
+
+      <p>
+        Gjerne bruk knappene i oversikten til venstre for å gjøre vannområder og vannområdene med
+        buffer usynlig. Da ser du tydelig at de er fjernet fra AOI_Trondheim-laget.
+      </p>
     </Popup>
   );
 }

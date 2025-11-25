@@ -19,8 +19,8 @@ export default function Task5({ isOpen, onClose, onBack, onAdvance }: Props5) {
       ]}
     >
       <p>
-        For å være på den sikre siden ønsker vi ikke å bygge helt inntil vannområder. Du skal derfor
-        lage en trygghetssone rundt vannområdene.
+        For å være på den sikre siden er det ikke ønskelig å bygge helt inntil vannområder. Du skal
+        derfor lage en sone rundt vannområdene hvor det ikke skal bygges.
       </p>
 
       <p>

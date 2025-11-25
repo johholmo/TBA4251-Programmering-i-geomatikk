@@ -20,21 +20,25 @@ export default function Task8({ isOpen, onClose, onBack, onAdvance }: Props8) {
     >
       <p>
         SiT må spare på midlene sine, og ønsker derfor å ikke måtte rive hverken vei eller bygninger
-        for å lage et nytt campus. I tillegg kan det være greit å ikke bygge direkte ved siden av en
-        bygning eller vei.
+        for å lage et nytt boligområde. I tillegg kan det være greit å ikke bygge direkte ved siden
+        av en bygning eller vei.
       </p>
 
       <p>
-        Last opp datasettene <strong>Vei</strong> og <strong>Bygninger</strong>. Klipp dem til{" "}
-        <strong> Area of Interest</strong>, og navngi dem godt.
+        Last opp datasettene <strong>Vei</strong> og <strong>Bygninger</strong>. Klipp dem til AOI,
+        og navngi dem godt.
       </p>
 
       <p>
         Lag deretter en buffer på <strong>30 meter</strong> rundt veiene, og en buffer på{" "}
-        <strong>20 meter</strong> fra bygninger.
+        <strong>20 meter</strong> rundt bygninger.
       </p>
 
-      <p>Bruk Difference-verktøyet for å fjerne bufferene fra AOI_Trondheim.</p>
+      <p>
+        Bruk Difference-verktøyet for å fjerne de to bufferlagene fra datalaget som representerer de
+        mulige byggeområdene. Navngi dette datalaget <em>Mulige byggeområder</em>. For ordenens
+        skyld kan du også slette de opprinnelige veiene og bygningene, samt bufferlagene nå.
+      </p>
     </Popup>
   );
 }

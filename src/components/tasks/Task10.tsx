@@ -18,15 +18,22 @@ export default function Task10({ isOpen, onClose, onBack, onAdvance }: Props10) 
         { label: "Neste oppgave", variant: "primary", onClick: onAdvance },
       ]}
     >
-      <p>Nå skal du finne de områdene som både er trygge og ønsket av SiT.</p>
-
       <p>
-        Bruk <strong>Intersect</strong>-verktøyet til å finne de områdene som overlapper i lagene{" "}
-        <strong>AOI_Trondheim</strong> (etter at du har fjernet risiko i oppgave 7) og bufferen
-        rundt campusene (oppgave 8).
+        Nå har du ett datalag med områder det er <em>mulig</em> å bygge i, og ett datalag det er{" "}
+        <em>ønskelig</em> å bygge i. Du skal nå finne de områdene som er innenfor begge disse
+        kategoriene.{" "}
       </p>
 
-      <p>Resultatet er de områdene som er både trygge og ligger sentralt i forhold til campus.</p>
+      <p>
+        Bruk <strong>Intersect</strong>-verktøyet til å finne de områdene som overlapper i datalaget{" "}
+        <em>Mulige byggeområder</em> og datalaget <em>Ønskede bygningsområder</em>.
+      </p>
+
+      <p>
+        Det nye datalaget du nå har laget vil være de områdene som det både er trygt å bygge på, og
+        ligger sentralt i forhold til campus. Navngi laget for eksempel{" "}
+        <em>Trygge og ønskede områder</em>.
+      </p>
     </Popup>
   );
 }

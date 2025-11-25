@@ -19,16 +19,17 @@ export default function Task4({ isOpen, onClose, onBack, onAdvance }: Props4) {
       ]}
     >
       <p>
-        Nå skal vi finne alle vannområder, ettersom det ikke er aktuelt å bygge studentboliger der.
-        Last opp datasettene <strong>Innsjø</strong>, <strong>Kanal</strong>, <strong>Elv</strong>{" "}
-        og <strong>Havflate</strong> fra GitHub, og klipp dem til AOI.
+        Nå skal du sørge for at det ikke bygges på noen vannområder. Last opp datasettene{" "}
+        <strong>Innsjø</strong>, <strong>Kanal</strong>, <strong>Elv</strong> og{" "}
+        <strong>Havflate</strong> fra GitHub, og klipp dem til AOI. Da kan du slette de originale
+        lagene.
       </p>
 
       <p>
-        Siden alle disse representerer vann, kan vi slå dem sammen til ett lag. Bruk{" "}
+        Siden alle disse representerer vann, kan du slå dem sammen til ett lag. Bruk{" "}
         <strong>Union</strong>-verktøyet for å samle dem i ett lag. Navngi og fargelegg laget
-        passende, for eksempel <em>Vannområder</em> i blå farge. Husk å også klippe datalaget til
-        AOI.
+        passende, for eksempel <em>Vannområder</em> i blå farge. Da kan du slette de individuelle
+        lagene.
       </p>
     </Popup>
   );

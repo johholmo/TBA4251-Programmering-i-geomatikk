@@ -25,8 +25,8 @@ export default function Task11({ isOpen, onClose, onBack, onAdvance }: Props11) 
       </p>
 
       <p>
-        Bruk verktøyet <strong>Area Filter</strong> til å finne de sammenhengende polygonene i
-        datalaget fra oppgave 10 som er minst 300 kvadratmeter.
+        Bruk verktøyet <strong>Area Filter</strong> til å finne områdene i datalaget "Trygge og
+        ønskede områder" fra forrige oppgave som er minst 300 kvadratmeter.
       </p>
     </Popup>
   );

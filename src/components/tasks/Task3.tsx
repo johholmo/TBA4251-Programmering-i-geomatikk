@@ -19,8 +19,8 @@ export default function Task3({ isOpen, onClose, onBack, onAdvance }: Props3) {
       ]}
     >
       <p>
-        Vi skal nå klippe Trondheim_Kommune til vårt Area of Interest (AOI) slik at vi kun får det
-        aktuelle området i kartet.
+        Du skal nå klippe Trondheim_Kommune til polygonlaget du lagde i forrige oppgave (Area of
+        Interest), slik at det kun er data innenfor det aktuelle området i kartet.
       </p>
 
       <p>
@@ -29,10 +29,10 @@ export default function Task3({ isOpen, onClose, onBack, onAdvance }: Props3) {
       </p>
 
       <p>
-        Når du har klippet får du et nytt datalag i sidebaren. Dette er delen av Trondheim Kommune
-        som ligger innenfor AOI. Gi laget et tydelig navn, for eksempel{" "}
-        <strong>AOI_Trondheim</strong>, og endre gjerne fargen. Du kan slette det opprinnelige
-        Trondheim_Kommune-laget.
+        Når du har utført klippingen vil du se et nytt datalag i sidebaren. Dette er delen av
+        Trondheim Kommune som ligger innenfor AOI. Gi dette laget et tydelig navn, for eksempel{" "}
+        <strong>AOI_Trondheim</strong>, og gjerne endre fargen. Du kan da slette det opprinnelige
+        Trondheim_Kommune-laget, men behold polygonlaget ditt for AOI.
       </p>
     </Popup>
   );
