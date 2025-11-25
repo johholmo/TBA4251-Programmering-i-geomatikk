@@ -20,6 +20,7 @@
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
 
   --sidebar-w: 380px;
+  --base-font-size: 16px;
 }
 
 * {
@@ -34,6 +35,8 @@ body {
   margin: 0;
   background: linear-gradient(180deg, rgba(245, 245, 240, 1) 0%, rgba(245, 245, 240, 0.92) 100%);
   color: var(--ink);
+  /* root-level font sizing — use rems throughout to scale with this */
+  font-size: var(--base-font-size);
   font-family:
     ui-sans-serif,
     system-ui,
@@ -171,7 +174,7 @@ body {
   height: 32px;
 
   color: #ffffff;
-  font-size: 18px;
+  font-size: 1.125rem;
   line-height: 1px;
 
   cursor: pointer;
@@ -232,7 +235,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .popup-buttons:hover {
@@ -248,7 +251,7 @@ body {
 }
 
 .popup-layer-name {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: #1e293b;
   white-space: nowrap;
   overflow: hidden;
@@ -294,7 +297,7 @@ body {
 
 .info-text {
   color: #64748b;
-  font-size: 12px;
+  font-size: 0.75rem;
   margin-top: -6px;
   margin-bottom: 8px;
 }
@@ -369,7 +372,7 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: #1e293b;
 }
 
@@ -470,13 +473,13 @@ body {
 }
 .btn-icon {
   width: 20px;
-  font-size: 18px;
+  font-size: 1.125rem;
   display: inline-block;
   text-align: center;
 }
 
 .btn-label {
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .btn-primary {
@@ -521,7 +524,7 @@ body {
   flex: 1;
 }
 .toolbar-chip {
-  font-size: 12px;
+  font-size: 0.75rem;
   background: #f8f6f1;
   border: 1px solid var(--border);
   padding: 6px 10px;
@@ -530,7 +533,7 @@ body {
 
 .toolbar .btn-label {
   font-weight: 550;
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.1px;
   white-space: nowrap;
 }
@@ -554,7 +557,7 @@ body {
 
 .tour-text {
   color: var(--ink-200);
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .tour-content {
@@ -564,7 +567,6 @@ body {
 .tour-caret {
   position: absolute;
   top: -10px;
-  /* left set inline via style */
   width: 0;
   height: 0;
   border-left: 10px solid transparent;
@@ -614,10 +616,10 @@ body {
   }
   .toolbar .btn-icon {
     width: 18px;
-    font-size: 15px;
+    font-size: 0.9375rem;
   }
   .toolbar .btn-label {
-    font-size: 13px;
+    font-size: 0.8125rem;
   }
 }
 
@@ -639,7 +641,7 @@ body {
 
   .toolbar .btn-icon {
     width: 18px;
-    font-size: 16px;
+    font-size: 1rem; /* 16px -> 1rem */
   }
 
   #tool-current-task {
@@ -647,11 +649,11 @@ body {
   }
   #tool-current-task .btn-label {
     display: inline;
-    font-size: 12px;
+    font-size: 0.75rem;
   }
   #tool-current-task .btn-icon {
     width: 15px;
-    font-size: 14px;
+    font-size: 0.875rem;
   }
 }
 
@@ -665,7 +667,7 @@ body {
   }
   .toolbar .btn-icon {
     width: 16px;
-    font-size: 14px;
+    font-size: 0.875rem;
   }
   #tool-current-task .btn-label {
     display: none;
@@ -713,7 +715,7 @@ body {
 .error-message {
   margin: 0;
   color: #b91c1c;
-  font-size: 13px;
+  font-size: 0.8125rem;
   text-align: center;
 }
 .upload-container {
@@ -736,7 +738,7 @@ body {
 }
 
 .upload-text-second {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--ink-200);
 }
 
@@ -761,12 +763,12 @@ body {
 }
 
 .dropdown-text {
-  font-size: 14px;
+  font-size: 0.875rem;
   text-align: left;
 }
 
 .dropdown-hidden {
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .dropdown-toggle {
@@ -790,12 +792,12 @@ body {
 }
 
 .layer-name-text {
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .clip-dropdown-scroll .popup-buttons {
   justify-content: flex-start;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .warning-message {
@@ -804,7 +806,7 @@ body {
   border-radius: 8px;
   color: #b91c1c;
   padding: 10px 12px;
-  font-size: 14px;
+  font-size: 0.875rem;
   text-align: center;
 }
 
@@ -847,7 +849,7 @@ body {
   padding: 3px 10px;
   border-radius: 15px;
   border: 1px solid rgba(0, 0, 0, 0.06);
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: black;
   max-height: 30px;
 }
@@ -858,4 +860,10 @@ body {
   cursor: pointer;
   font-weight: 700;
   line-height: 1;
+}
+
+@media (min-width: 1600px) {
+  :root {
+    --base-font-size: 18px;
+  }
 }
