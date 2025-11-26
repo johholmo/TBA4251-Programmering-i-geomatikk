@@ -1,16 +1,32 @@
 import { useEffect, useRef, useState } from "react";
 import { useLayers } from "../../context/LayersContext";
-import * as turf from "@turf/turf";
-import type { Feature, FeatureCollection, Geometry, Polygon, MultiPolygon } from "geojson";
-import { to25832 } from "../../utils/geomaticFunctions";
+import type { FeatureCollection, Geometry } from "geojson";
 import Popup, { type Action } from "../popup/Popup";
 import { isPoly } from "../../utils/geomaticFunctions";
 import { toTransparent } from "../../utils/commonFunctions";
+import GeoWorker from "../../workers/geoworkers?worker";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
 };
+
+type WorkerMessage =
+  | {
+      id: string;
+      ok: true;
+      type: "union";
+      result: {
+        fc4326: FeatureCollection<Geometry>;
+        fc25832: FeatureCollection<Geometry>;
+      };
+    }
+  | {
+      id: string;
+      ok: false;
+      type: "union";
+      error: string;
+    };
 
 // Slår sammen flere polygonlag til ett lag
 export default function Union({ isOpen, onClose }: Props) {
@@ -21,6 +37,80 @@ export default function Union({ isOpen, onClose }: Props) {
 
   const [isListOpen, setIsListOpen] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
+
+  const workerRef = useRef<Worker | null>(null);
+  const currentJobIdRef = useRef<string | null>(null);
+
+  // Unioner kun lag som har minst en polygon eller multipolygon
+  const polygonLayers = layers.filter((l) =>
+    l.geojson4326.features.some((f) => isPoly(f.geometry))
+  );
+  const selectableLayers = polygonLayers.filter((l) => !selectedIds.includes(l.id));
+  const hasLayers = polygonLayers.length > 1;
+
+  // Init / cleanup worker
+  useEffect(() => {
+    if (!workerRef.current) {
+      workerRef.current = new GeoWorker();
+    }
+    const worker = workerRef.current;
+
+    const handleMessage = (event: MessageEvent<WorkerMessage>) => {
+      const msg = event.data;
+      if (msg.type !== "union") return;
+      if (!currentJobIdRef.current || msg.id !== currentJobIdRef.current) return;
+
+      if (!msg.ok) {
+        setError(msg.error || "Klarte ikke å lage union (worker-feil).");
+        setBusy(false);
+        currentJobIdRef.current = null;
+        return;
+      }
+
+      try {
+        const { fc4326, fc25832 } = msg.result;
+
+        const chosenLayers = layers.filter((l) => selectedIds.includes(l.id));
+        if (!chosenLayers.length) {
+          throw new Error("Fant ikke lagene for union-resultat.");
+        }
+
+        addLayer({
+          name: "UNION_LAYER",
+          sourceCrs: "EPSG:25832",
+          geojson25832: fc25832,
+          geojson4326: fc4326,
+          color: chosenLayers[0].color,
+          visible: true,
+        });
+
+        setBusy(false);
+        currentJobIdRef.current = null;
+        onClose();
+      } catch (e: any) {
+        console.error(e);
+        setError(e?.message || "Klarte ikke å legge til union-resultat.");
+        setBusy(false);
+        currentJobIdRef.current = null;
+      }
+    };
+
+    const handleError = (event: ErrorEvent) => {
+      console.error("Feil i geo-worker:", event.message);
+      setError("Feil ved lasting av geo-worker. Operasjonen ble avbrutt.");
+      setBusy(false);
+      currentJobIdRef.current = null;
+    };
+
+    worker.addEventListener("message", handleMessage);
+    worker.addEventListener("error", handleError);
+
+    return () => {
+      worker.removeEventListener("message", handleMessage);
+      worker.removeEventListener("error", handleError);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layers, selectedIds, addLayer, onClose]);
 
   // Lukk ved klikk utenfor
   useEffect(() => {
@@ -41,15 +131,9 @@ export default function Union({ isOpen, onClose }: Props) {
       setIsListOpen(false);
       setBusy(false);
       setError(null);
+      currentJobIdRef.current = null;
     }
   }, [isOpen]);
-
-  // Unioner kun lag som har minst en polygon eller multipolygon
-  const polygonLayers = layers.filter((l) =>
-    l.geojson4326.features.some((f) => isPoly(f.geometry))
-  );
-  const selectableLayers = polygonLayers.filter((l) => !selectedIds.includes(l.id));
-  const hasLayers = polygonLayers.length > 1;
 
   // Legg til valgte lag
   function addSelected(id: string) {
@@ -60,112 +144,37 @@ export default function Union({ isOpen, onClose }: Props) {
     setSelectedIds((prev) => prev.filter((x) => x !== id));
   }
 
-  // Håndterer selve union-operasjonen
+  // Håndterer selve union-operasjonen via worker
   function handleUnion() {
     if (selectedIds.length < 2 || busy) return;
 
-    setBusy(true); // Start spinner
+    const worker = workerRef.current;
+    if (!worker) {
+      setError("Worker ikke initialisert.");
+      return;
+    }
+
+    const chosenLayers = layers.filter((l) => selectedIds.includes(l.id));
+    if (chosenLayers.length < 2) {
+      setError("Velg minst to lag med polygon-geometrier.");
+      return;
+    }
+
+    const layerFcs: FeatureCollection<Geometry>[] = chosenLayers.map(
+      (l) => l.geojson4326 as FeatureCollection<Geometry>
+    );
+
+    setBusy(true);
     setError(null);
 
-    setTimeout(() => {
-      let success = false;
+    const jobId = crypto.randomUUID();
+    currentJobIdRef.current = jobId;
 
-      try {
-        // Valgte lag
-        const chosenLayers = layers.filter(
-          (l) => selectedIds.includes(l.id) && polygonLayers.some((p) => p.id === l.id)
-        );
-
-        // Må ha minst to lag å slå sammen
-        if (chosenLayers.length < 2) {
-          throw new Error("Velg minst to lag med polygon-geometrier.");
-        }
-
-        // Samle alle polygon/multipolygon-features i 4326 format
-        const allPolyFeatures: Feature<Polygon | MultiPolygon>[] = [];
-        for (const l of chosenLayers) {
-          for (const f of l.geojson4326.features) {
-            if (isPoly(f.geometry)) {
-              const cloned = {
-                type: "Feature",
-                properties: { ...(f.properties || {}) },
-                geometry: JSON.parse(JSON.stringify(f.geometry)),
-              } as Feature<Polygon | MultiPolygon>;
-              allPolyFeatures.push(cloned);
-            }
-          }
-        }
-
-        // Trenger minst to polygon-geometrier for å lage union
-        if (allPolyFeatures.length < 2) {
-          throw new Error("Fant ikke nok polygon-geometrier i de valgte lagene til å lage union.");
-        }
-
-        // Lag union
-        const fc: FeatureCollection<Polygon | MultiPolygon> = {
-          type: "FeatureCollection",
-          features: allPolyFeatures,
-        };
-
-        let unionFeature: Feature<Polygon | MultiPolygon> | null = null;
-
-        // Try/catch fordi masse trøbbel med turf, men dette funker
-        try {
-          // Prøver først med hele featurecollectionen
-          unionFeature = (turf as any).union(fc) as Feature<Polygon | MultiPolygon> | null;
-        } catch {
-          let acc: Feature<Polygon | MultiPolygon> | null = allPolyFeatures[0];
-          // Hvis det feiler, gjør det iterativt
-          for (let i = 1; i < allPolyFeatures.length; i++) {
-            const next = allPolyFeatures[i];
-            try {
-              const u = (turf as any).union(acc as any, next as any) as Feature<
-                Polygon | MultiPolygon
-              > | null;
-              if (u) {
-                acc = u;
-              } else {
-              }
-            } catch (e) {}
-          }
-          unionFeature = acc;
-        }
-
-        if (!unionFeature || !unionFeature.geometry) {
-          throw new Error("Klarte ikke å lage union av lagene.");
-        }
-
-        // Tilbake til featurecollection
-        const union4326: FeatureCollection<Geometry> = {
-          type: "FeatureCollection",
-          features: [unionFeature as Feature<Geometry>],
-        };
-
-        // Projiser til 25832
-        const union25832 = to25832(union4326);
-
-        // Legg til i sidebar med fast navn og farge fra første valgte lag
-        addLayer({
-          name: `UNION_LAYER`,
-          sourceCrs: "EPSG:25832",
-          geojson25832: union25832,
-          geojson4326: union4326,
-          color: chosenLayers[0].color,
-          visible: true,
-        });
-
-        success = true;
-      } catch (e: any) {
-        console.error(e);
-        setError(e?.message || "Klarte ikke å lage union.");
-      } finally {
-        // Stopp spinner og lukk popup
-        setBusy(false);
-        if (success) {
-          onClose();
-        }
-      }
-    }, 0);
+    worker.postMessage({
+      id: jobId,
+      type: "union",
+      layers: layerFcs,
+    });
   }
 
   if (!isOpen) return null;
@@ -183,7 +192,6 @@ export default function Union({ isOpen, onClose }: Props) {
         },
       ];
 
-  // HTML for popupen
   return (
     <Popup
       isOpen={isOpen}
@@ -196,7 +204,7 @@ export default function Union({ isOpen, onClose }: Props) {
       {busy ? (
         <div className="busy-container">
           <div className="spinner" />
-          <div className="busy-text">Slår sammen...</div>
+          <div className="busy-text">Slår sammen... </div>
         </div>
       ) : !hasLayers ? (
         <div className="warning-message">
@@ -239,9 +247,7 @@ export default function Union({ isOpen, onClose }: Props) {
               <button
                 type="button"
                 className="dropdown-toggle"
-                style={{
-                  borderRadius: isListOpen ? "8px 8px 0 0" : "8px",
-                }}
+                style={{ borderRadius: isListOpen ? "8px 8px 0 0" : "8px" }}
                 onClick={() => setIsListOpen((x) => !x)}
               >
                 <span className="dropdown-text">

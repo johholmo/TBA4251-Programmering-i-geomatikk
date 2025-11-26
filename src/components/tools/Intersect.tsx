@@ -1,22 +1,35 @@
 import { useEffect, useRef, useState } from "react";
 import { useLayers } from "../../context/LayersContext";
-import type { Feature, FeatureCollection, Geometry, Polygon, MultiPolygon } from "geojson";
-import cleanCoords from "@turf/clean-coords";
-import bbox from "@turf/bbox";
-import booleanIntersects from "@turf/boolean-intersects";
-import { to25832 } from "../../utils/geomaticFunctions";
+import type { FeatureCollection, Geometry } from "geojson";
 import Popup, { type Action } from "../popup/Popup";
-import { isPoly, turfIntersect } from "../../utils/geomaticFunctions";
+import { isPoly } from "../../utils/geomaticFunctions";
+import GeoWorker from "../../workers/geoworkers?worker";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
 };
 
+type WorkerMessage =
+  | {
+      id: string;
+      ok: true;
+      type: "intersect";
+      result: {
+        fc4326: FeatureCollection<Geometry>;
+        fc25832: FeatureCollection<Geometry>;
+      };
+    }
+  | {
+      id: string;
+      ok: false;
+      type: "intersect";
+      error: string;
+    };
+
 // Finner overlapp mellom to polygonlag
 export default function Intersect({ isOpen, onClose }: Props) {
   const { layers, addLayer } = useLayers();
-  // Definerer eget for lag A og B
   const [layerAId, setLayerAId] = useState<string>("");
   const [layerBId, setLayerBId] = useState<string>("");
   const [busy, setBusy] = useState(false);
@@ -26,11 +39,73 @@ export default function Intersect({ isOpen, onClose }: Props) {
   const listARef = useRef<HTMLDivElement | null>(null);
   const listBRef = useRef<HTMLDivElement | null>(null);
 
+  // Worker
+  const currentJobIdRef = useRef<string | null>(null);
+
   // Finner polygonlagene som kan velges
   const polygonLayers = layers.filter((l) =>
     l.geojson4326.features.some((f) => isPoly(f.geometry))
   );
   const hasLayers = polygonLayers.length >= 2;
+
+  // Init / cleanup worker + message handler
+  const workerRef = useRef<Worker | null>(null);
+
+  useEffect(() => {
+    if (!workerRef.current) {
+      workerRef.current = new GeoWorker();
+    }
+    const worker = workerRef.current;
+
+    const handleMessage = (event: MessageEvent<WorkerMessage>) => {
+      const msg = event.data;
+      if (msg.type !== "intersect") return;
+      if (!currentJobIdRef.current || msg.id !== currentJobIdRef.current) return;
+
+      if (!msg.ok) {
+        setError(msg.error || "Klarte ikke å utføre intersect (worker-feil).");
+        setBusy(false);
+        currentJobIdRef.current = null;
+        return;
+      }
+
+      try {
+        const { fc4326, fc25832 } = msg.result;
+
+        const layerA = polygonLayers.find((l) => l.id === layerAId);
+        const layerB = polygonLayers.find((l) => l.id === layerBId);
+
+        const nameA = layerA?.name || "LagA";
+        const nameB = layerB?.name || "LagB";
+        const newName = `${nameA} ∩ ${nameB}`;
+        const color = layerA?.color ?? "#ff0000";
+
+        addLayer({
+          name: newName,
+          sourceCrs: "EPSG:25832",
+          geojson25832: fc25832,
+          geojson4326: fc4326,
+          color,
+          visible: true,
+        });
+
+        setBusy(false);
+        currentJobIdRef.current = null;
+        onClose();
+      } catch (e: any) {
+        console.error(e);
+        setError(e?.message || "Klarte ikke å legge til intersect-resultat.");
+        setBusy(false);
+        currentJobIdRef.current = null;
+      }
+    };
+
+    worker.addEventListener("message", handleMessage);
+    return () => {
+      worker.removeEventListener("message", handleMessage);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [polygonLayers, layerAId, layerBId, addLayer, onClose]);
 
   // Lukk ved klikk utenfor
   useEffect(() => {
@@ -56,171 +131,41 @@ export default function Intersect({ isOpen, onClose }: Props) {
       setError(null);
       setIsListAOpen(false);
       setIsListBOpen(false);
+      currentJobIdRef.current = null;
     }
   }, [isOpen]);
 
-  // Håndterer selve intersecten
+  // Håndterer intersect via worker
   function handleIntersect() {
     if (!layerAId || !layerBId || layerAId === layerBId || busy) return;
 
-    setBusy(true); // Starter spinner
+    const worker = workerRef.current;
+    if (!worker) {
+      setError("Worker ikke initialisert.");
+      return;
+    }
+
+    const layerA = polygonLayers.find((l) => l.id === layerAId);
+    const layerB = polygonLayers.find((l) => l.id === layerBId);
+    if (!layerA || !layerB) {
+      setError("Fant ikke begge lagene som skulle intersectes.");
+      return;
+    }
+
+    setBusy(true);
     setError(null);
 
-    setTimeout(() => {
-      let success = false;
+    const jobId = crypto.randomUUID();
+    currentJobIdRef.current = jobId;
 
-      try {
-        // Finner lagene
-        const layerA = polygonLayers.find((l) => l.id === layerAId);
-        const layerB = polygonLayers.find((l) => l.id === layerBId);
+    const job = {
+      id: jobId,
+      type: "intersect" as const,
+      layerA: layerA.geojson4326 as FeatureCollection<Geometry>,
+      layerB: layerB.geojson4326 as FeatureCollection<Geometry>,
+    };
 
-        if (!layerA || !layerB) {
-          throw new Error("Fant ikke begge lagene som skulle intersectes.");
-        }
-
-        // Finner polygonene
-        const featsA: Feature<Polygon | MultiPolygon>[] = [];
-        const featsB: Feature<Polygon | MultiPolygon>[] = [];
-        for (const f of layerA.geojson4326.features) {
-          if (isPoly(f.geometry)) {
-            featsA.push({
-              type: "Feature",
-              properties: { ...(f.properties || {}) },
-              geometry: f.geometry as Polygon | MultiPolygon,
-            });
-          }
-        }
-        for (const f of layerB.geojson4326.features) {
-          if (isPoly(f.geometry)) {
-            featsB.push({
-              type: "Feature",
-              properties: { ...(f.properties || {}) },
-              geometry: f.geometry as Polygon | MultiPolygon,
-            });
-          }
-        }
-
-        if (featsA.length === 0 || featsB.length === 0) {
-          throw new Error("Manglende polygon-geometrier i ett eller begge lag.");
-        }
-
-        const outFeatures: Feature<Geometry>[] = [];
-        const seenGeoms = new Set<string>();
-
-        // Pre-beregn bbox for alle features
-        const featsAWithBbox = featsA.map((fa) => ({
-          feature: fa,
-          bbox: bbox(fa.geometry as any),
-        }));
-        const featsBWithBbox = featsB.map((fb) => ({
-          feature: fb,
-          bbox: bbox(fb.geometry as any),
-        }));
-
-        // Gå gjennom alle kombinasjoner av features i A og B
-        for (const { feature: fa, bbox: bbA } of featsAWithBbox) {
-          for (const { feature: fb, bbox: bbB } of featsBWithBbox) {
-            const geomA = fa.geometry;
-            const geomB = fb.geometry;
-
-            if (!geomA || !geomB) continue;
-
-            // Se om bounding boxes overlapper
-            const overlap =
-              bbA[0] <= bbB[2] && bbA[2] >= bbB[0] && bbA[1] <= bbB[3] && bbA[3] >= bbB[1];
-
-            // Hvis ingen overlapp, fortsett
-            if (!overlap) continue;
-
-            // Sjekk om de faktisk intersecter
-            const inters = booleanIntersects(
-              { type: "Feature", properties: {}, geometry: geomA } as any,
-              { type: "Feature", properties: {}, geometry: geomB } as any
-            );
-
-            // Hvis ikke intersect, fortsett
-            if (!inters) continue;
-
-            // Prøver å finne intersect
-            let clipped: Feature<Polygon | MultiPolygon> | null = null;
-
-            try {
-              clipped = turfIntersect(fa as any, fb as any);
-            } catch (err1) {
-              // Hvis trøbbel med turf, prøv å rense geometrier først
-              const cleanedA = cleanCoords(geomA as any) as Polygon | MultiPolygon;
-              const cleanedB = cleanCoords(geomB as any) as Polygon | MultiPolygon;
-
-              const featCleanA: Feature<Polygon | MultiPolygon> = {
-                type: "Feature",
-                properties: fa.properties || {},
-                geometry: cleanedA,
-              };
-              const featCleanB: Feature<Polygon | MultiPolygon> = {
-                type: "Feature",
-                properties: fb.properties || {},
-                geometry: cleanedB,
-              };
-
-              // Prøver på nytt med renset geometri
-              try {
-                clipped = turfIntersect(featCleanA as any, featCleanB as any);
-              } catch {
-                continue;
-              }
-            }
-
-            // Hvis intersect mislykkes, fortsett
-            if (!clipped || !clipped.geometry) continue;
-
-            // Unngå duplikater ved å sjekke geometri
-            const geomKey = JSON.stringify(clipped.geometry);
-            if (seenGeoms.has(geomKey)) continue;
-            seenGeoms.add(geomKey);
-
-            const mergedProps = {
-              ...(fa.properties || {}),
-              ...(fb.properties || {}),
-            };
-            // Legger til merget i output
-            outFeatures.push({
-              type: "Feature",
-              properties: mergedProps,
-              geometry: clipped.geometry as Geometry,
-            });
-          }
-        }
-
-        // Legger til som nytt lag med navn, farge og projisering
-        const intersect4326: FeatureCollection<Geometry> = {
-          type: "FeatureCollection",
-          features: outFeatures,
-        };
-        const intersect25832 = to25832(intersect4326);
-        const nameA = layerA.name || "LagA";
-        const nameB = layerB.name || "LagB";
-        const newName = `${nameA} ∩ ${nameB}`;
-
-        addLayer({
-          name: newName,
-          sourceCrs: "EPSG:25832",
-          geojson25832: intersect25832,
-          geojson4326: intersect4326,
-          color: layerA.color,
-          visible: true,
-        });
-
-        success = true;
-      } catch (e: any) {
-        console.error(e);
-        setError(e?.message || "Klarte ikke å utføre intersect.");
-      } finally {
-        setBusy(false); // Stopper spinner og lukker popup
-        if (success) {
-          onClose();
-        }
-      }
-    }, 0);
+    worker.postMessage(job);
   }
 
   if (!isOpen) return null;
@@ -238,7 +183,6 @@ export default function Intersect({ isOpen, onClose }: Props) {
         },
       ];
 
-  // HTML for popupen
   return (
     <Popup
       isOpen={isOpen}
@@ -251,7 +195,7 @@ export default function Intersect({ isOpen, onClose }: Props) {
       {busy ? (
         <div className="busy-container">
           <div className="spinner" />
-          <div className="busy-text">Beregner overlapp…</div>
+          <div className="busy-text">Beregner overlapp… </div>
         </div>
       ) : !hasLayers ? (
         <div className="warning-message">
@@ -268,9 +212,7 @@ export default function Intersect({ isOpen, onClose }: Props) {
               <button
                 type="button"
                 className="dropdown-toggle"
-                style={{
-                  borderRadius: isListAOpen ? "8px 8px 0 0" : "8px",
-                }}
+                style={{ borderRadius: isListAOpen ? "8px 8px 0 0" : "8px" }}
                 onClick={() => setIsListAOpen((x) => !x)}
               >
                 <span className="dropdown-text">
@@ -318,9 +260,7 @@ export default function Intersect({ isOpen, onClose }: Props) {
               <button
                 type="button"
                 className="dropdown-toggle"
-                style={{
-                  borderRadius: isListBOpen ? "8px 8px 0 0" : "8px",
-                }}
+                style={{ borderRadius: isListBOpen ? "8px 8px 0 0" : "8px" }}
                 onClick={() => setIsListBOpen((x) => !x)}
               >
                 <span className="dropdown-text">

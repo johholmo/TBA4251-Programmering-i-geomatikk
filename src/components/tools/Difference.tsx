@@ -1,21 +1,35 @@
 import { useEffect, useRef, useState } from "react";
 import { useLayers } from "../../context/LayersContext";
-import type { Feature, FeatureCollection, Geometry, Polygon, MultiPolygon } from "geojson";
-import cleanCoords from "@turf/clean-coords";
-import bbox from "@turf/bbox";
-import booleanIntersects from "@turf/boolean-intersects";
+import type { FeatureCollection, Geometry } from "geojson";
 import Popup, { type Action } from "../popup/Popup";
-import { isPoly, turfDifference, to25832 } from "../../utils/geomaticFunctions";
+import { isPoly } from "../../utils/geomaticFunctions";
+import GeoWorker from "../../workers/geoworkers?worker";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
 };
 
+type WorkerMessage =
+  | {
+      id: string;
+      ok: true;
+      type: "difference";
+      result: {
+        fc4326: FeatureCollection<Geometry>;
+        fc25832: FeatureCollection<Geometry>;
+      };
+    }
+  | {
+      id: string;
+      ok: false;
+      type: "difference";
+      error: string;
+    };
+
 // Finner forskjellen mellom to polygonlag
 export default function Difference({ isOpen, onClose }: Props) {
   const { layers, addLayer } = useLayers();
-  // Definerer for lag A og B
   const [layerAId, setLayerAId] = useState<string>("");
   const [layerBId, setLayerBId] = useState<string>("");
   const [busy, setBusy] = useState(false);
@@ -26,11 +40,79 @@ export default function Difference({ isOpen, onClose }: Props) {
   const listARef = useRef<HTMLDivElement | null>(null);
   const listBRef = useRef<HTMLDivElement | null>(null);
 
+  // Worker-ref (deles mellom kjøringer)
+  const currentJobIdRef = useRef<string | null>(null);
+
   // Polygon-lag
   const polygonLayers = layers.filter((l) =>
     l.geojson4326.features.some((f) => isPoly(f.geometry))
   );
   const hasLayers = polygonLayers.length >= 2;
+
+  // Init / clean up worker
+  const workerRef = useRef<Worker | null>(null);
+
+  useEffect(() => {
+    if (!workerRef.current) {
+      workerRef.current = new GeoWorker();
+    }
+    const worker = workerRef.current;
+
+    const handleMessage = (event: MessageEvent<WorkerMessage>) => {
+      const msg = event.data;
+      // Vi forventer bare difference-jobber her
+      if (msg.type !== "difference") return;
+      if (!currentJobIdRef.current || msg.id !== currentJobIdRef.current) return;
+
+      if (!msg.ok) {
+        setError(msg.error || "Klarte ikke å utføre difference (worker-feil).");
+        setBusy(false);
+        currentJobIdRef.current = null;
+        return;
+      }
+
+      // Suksess: legg til nytt lag
+      try {
+        const { fc4326, fc25832 } = msg.result;
+
+        const layerA = polygonLayers.find((l) => l.id === layerAId);
+        const layerB = polygonLayers.find((l) => l.id === layerBId);
+
+        const nameA = layerA?.name || "LagA";
+        const nameB = layerB?.name || "LagB";
+        const newName = `${nameA} - ${nameB}`;
+        const color = layerA?.color ?? "#ff0000";
+
+        addLayer({
+          name: newName,
+          sourceCrs: "EPSG:25832",
+          geojson25832: fc25832,
+          geojson4326: fc4326,
+          color,
+          visible: true,
+        });
+
+        setBusy(false);
+        currentJobIdRef.current = null;
+        onClose();
+      } catch (e: any) {
+        console.error(e);
+        setError(e?.message || "Klarte ikke å legge til difference-resultat.");
+        setBusy(false);
+        currentJobIdRef.current = null;
+      }
+    };
+
+    worker.addEventListener("message", handleMessage);
+    return () => {
+      worker.removeEventListener("message", handleMessage);
+      // Ikke terminate her hvis du vil gjenbruke mellom mounts;
+      // men for sikkerhet kan du:
+      // worker.terminate();
+      // workerRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [polygonLayers, layerAId, layerBId, addLayer, onClose]);
 
   // Lukk klikk utenfor
   useEffect(() => {
@@ -56,12 +138,12 @@ export default function Difference({ isOpen, onClose }: Props) {
       setError(null);
       setIsListAOpen(false);
       setIsListBOpen(false);
+      currentJobIdRef.current = null;
     }
   }, [isOpen]);
 
-  // Håndterer difference
+  // Håndterer difference (nå via worker)
   function handleDifference() {
-    // Hvis ikke lag er valgt eller samme lag, returner
     if (!layerAId || !layerBId || layerAId === layerBId || busy) {
       if (!busy && layerAId && layerBId && layerAId === layerBId) {
         setError("Velg to ulike polygon-lag for A og B.");
@@ -69,178 +151,33 @@ export default function Difference({ isOpen, onClose }: Props) {
       return;
     }
 
-    setBusy(true); // Start spinner
+    const worker = workerRef.current;
+    if (!worker) {
+      setError("Worker ikke initialisert.");
+      return;
+    }
+
+    const layerA = polygonLayers.find((l) => l.id === layerAId);
+    const layerB = polygonLayers.find((l) => l.id === layerBId);
+    if (!layerA || !layerB) {
+      setError("Fant ikke begge lagene for difference.");
+      return;
+    }
+
+    setBusy(true);
     setError(null);
 
-    setTimeout(() => {
-      let success = false;
+    const jobId = crypto.randomUUID();
+    currentJobIdRef.current = jobId;
 
-      try {
-        // Prøver å finne lag A og B
-        const layerA = polygonLayers.find((l) => l.id === layerAId);
-        const layerB = polygonLayers.find((l) => l.id === layerBId);
+    const job = {
+      id: jobId,
+      type: "difference" as const,
+      layerA: layerA.geojson4326 as FeatureCollection<Geometry>,
+      layerB: layerB.geojson4326 as FeatureCollection<Geometry>,
+    };
 
-        if (!layerA || !layerB) {
-          throw new Error("Fant ikke begge lagene for difference.");
-        }
-
-        // Samle polygoner i A og B
-        const featsA: Feature<Polygon | MultiPolygon>[] = [];
-        const featsB: Feature<Polygon | MultiPolygon>[] = [];
-
-        for (const f of layerA.geojson4326.features) {
-          if (isPoly(f.geometry)) {
-            featsA.push({
-              type: "Feature",
-              properties: { ...(f.properties || {}) },
-              geometry: f.geometry as Polygon | MultiPolygon,
-            });
-          }
-        }
-
-        for (const f of layerB.geojson4326.features) {
-          if (isPoly(f.geometry)) {
-            featsB.push({
-              type: "Feature",
-              properties: { ...(f.properties || {}) },
-              geometry: f.geometry as Polygon | MultiPolygon,
-            });
-          }
-        }
-
-        // Må ha polygoner i begge lag
-        if (featsA.length === 0 || featsB.length === 0) {
-          throw new Error("Manglende polygon-geometrier i ett eller begge lag.");
-        }
-
-        // Pre-beregn bbox for alle B-features (slik at det ikke gjøres for hvert A-polygon)
-        const featsBWithBbox = featsB.map((fb) => ({
-          feature: fb,
-          bbox: bbox(fb.geometry as any),
-        }));
-
-        const outFeatures: Feature<Geometry>[] = [];
-
-        // For hvert A-polygon, trekk fra alle B-polygoner ett og ett
-        for (const fa of featsA) {
-          let currentGeom: Polygon | MultiPolygon | null = fa.geometry || null;
-          if (!currentGeom) continue;
-
-          for (const { feature: fb, bbox: bbB } of featsBWithBbox) {
-            if (!currentGeom) break; // A er sjekket ferdig
-
-            const geomB = fb.geometry;
-            if (!geomB) continue;
-
-            // Sjekker først om bounding boxer overlapper
-            const bbA = bbox(currentGeom as any);
-            const overlapBBox =
-              bbA[0] <= bbB[2] && bbA[2] >= bbB[0] && bbA[1] <= bbB[3] && bbA[3] >= bbB[1];
-
-            if (!overlapBBox) {
-              // ingen overlapp i det hele tatt
-              continue;
-            }
-
-            // Sjekker så med mer nøyaktig intersect
-            const intersects = booleanIntersects(
-              { type: "Feature", properties: {}, geometry: currentGeom } as any,
-              { type: "Feature", properties: {}, geometry: geomB } as any
-            );
-            if (!intersects) {
-              // ingen faktisk overlapp
-              continue;
-            }
-
-            // Prøver difference: currentGeom - geomB
-            try {
-              const res = turfDifference(
-                {
-                  type: "Feature",
-                  properties: {},
-                  geometry: currentGeom,
-                } as Feature<Polygon | MultiPolygon>,
-                fb as Feature<Polygon | MultiPolygon>
-              );
-
-              if (!res || !res.geometry) {
-                // Hele currentGeom inni B, så vi har ingenting igjen
-                currentGeom = null;
-                break;
-              }
-
-              currentGeom = res.geometry;
-            } catch (err1) {
-              // Hvis trøbbel med turf, prøv å rense geometrier først
-              const cleanedA = cleanCoords(currentGeom as any) as Polygon | MultiPolygon;
-              const cleanedB = cleanCoords(geomB as any) as Polygon | MultiPolygon;
-
-              const featCleanA: Feature<Polygon | MultiPolygon> = {
-                type: "Feature",
-                properties: {},
-                geometry: cleanedA,
-              };
-              const featCleanB: Feature<Polygon | MultiPolygon> = {
-                type: "Feature",
-                properties: {},
-                geometry: cleanedB,
-              };
-
-              try {
-                // Prøver difference igjen med rensede geometrier
-                const res = turfDifference(featCleanA, featCleanB);
-                if (!res || !res.geometry) {
-                  currentGeom = null;
-                  break;
-                }
-                currentGeom = res.geometry;
-              } catch {
-                // Hvis det fortsatt feiler: la currentGeom være som den er og gå videre til neste B
-                continue;
-              }
-            }
-          }
-
-          // Etter å ha trukket fra alle B, legg til i output hvis noe er igjen
-          if (currentGeom) {
-            outFeatures.push({
-              type: "Feature",
-              properties: { ...(fa.properties || {}) },
-              geometry: currentGeom as Geometry,
-            });
-          }
-        }
-
-        // Legger til nytt lag med navn, farge og projisering
-        const diff4326: FeatureCollection<Geometry> = {
-          type: "FeatureCollection",
-          features: outFeatures,
-        };
-        const diff25832 = to25832(diff4326);
-        const nameA = layerA.name || "LagA";
-        const nameB = layerB.name || "LagB";
-        const newName = `${nameA} - ${nameB}`;
-        addLayer({
-          name: newName,
-          sourceCrs: "EPSG:25832",
-          geojson25832: diff25832,
-          geojson4326: diff4326,
-          color: layerA.color,
-          visible: true,
-        });
-
-        success = true;
-      } catch (e: any) {
-        console.error(e);
-        setError(e?.message || "Klarte ikke å utføre difference.");
-      } finally {
-        setBusy(false);
-        if (success) {
-          // Lukk popup og stopp spinner
-          onClose();
-        }
-      }
-    }, 0);
+    worker.postMessage(job);
   }
 
   if (!isOpen) return null;
@@ -263,7 +200,6 @@ export default function Difference({ isOpen, onClose }: Props) {
         },
       ];
 
-  // HTML for popupen
   return (
     <Popup
       isOpen={isOpen}
@@ -276,7 +212,7 @@ export default function Difference({ isOpen, onClose }: Props) {
       {busy ? (
         <div className="busy-container">
           <div className="spinner" />
-          <div className="busy-text">Utfører difference…</div>
+          <div className="busy-text">Utfører difference… </div>
         </div>
       ) : !hasLayers ? (
         <div className="warning-message">
@@ -286,14 +222,12 @@ export default function Difference({ isOpen, onClose }: Props) {
         <div className="choose-layer-container">
           <div className="field-group">
             {/* Velg lag A (beholde)*/}
-            <div className="choose-layer-text">Velg laget du vil beholde (A)</div>
+            <div className="choose-layer-text">Velg laget du vil beholde</div>
             <div className="dropdown" ref={listARef}>
               <button
                 type="button"
                 className="dropdown-toggle"
-                style={{
-                  borderRadius: isListAOpen ? "8px 8px 0 0" : "8px",
-                }}
+                style={{ borderRadius: isListAOpen ? "8px 8px 0 0" : "8px" }}
                 onClick={() => setIsListAOpen((x) => !x)}
               >
                 <span className="dropdown-text">
@@ -301,7 +235,7 @@ export default function Difference({ isOpen, onClose }: Props) {
                     ? (polygonLayers.find((l) => l.id === layerAId)?.name ?? "Velg lag")
                     : "Velg lag"}
                 </span>
-                <span area-hidden className="dropdown-hidden">
+                <span aria-hidden className="dropdown-hidden">
                   ▾
                 </span>
               </button>
@@ -336,22 +270,20 @@ export default function Difference({ isOpen, onClose }: Props) {
 
           <div className="field-group">
             {/* Velg lag B (trekke fra)*/}
-            <div className="choose-layer-text">Velg laget du vil trekke fra (B)</div>
+            <div className="choose-layer-text">Velg laget du vil trekke fra</div>
             <div className="dropdown" ref={listBRef}>
               <button
                 type="button"
                 className="dropdown-toggle"
-                style={{
-                  borderRadius: isListBOpen ? "8px 8px 0 0" : "8px",
-                }}
+                style={{ borderRadius: isListBOpen ? "8px 8px 0 0" : "8px" }}
                 onClick={() => setIsListBOpen((x) => !x)}
               >
                 <span className="dropdown-text">
                   {layerBId
-                    ? (polygonLayers.find((l) => l.id === layerBId)?.name ?? "Velg lag B…")
-                    : "Velg lag B…"}
+                    ? (polygonLayers.find((l) => l.id === layerBId)?.name ?? "Velg lag…")
+                    : "Velg lag…"}
                 </span>
-                <span area-hidden className="dropdown-hidden">
+                <span aria-hidden className="dropdown-hidden">
                   ▾
                 </span>
               </button>

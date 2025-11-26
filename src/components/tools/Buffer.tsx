@@ -1,15 +1,30 @@
 import { useEffect, useRef, useState } from "react";
 import { useLayers } from "../../context/LayersContext";
-import * as turf from "@turf/turf";
-import { featureCollection } from "@turf/helpers";
-import type { Feature, Geometry, FeatureCollection as FC } from "geojson";
-import { to25832 } from "../../utils/geomaticFunctions";
+import type { FeatureCollection, Geometry } from "geojson";
 import Popup, { type Action } from "../popup/Popup";
+import GeoWorker from "../../workers/geoworkers?worker";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
 };
+
+type WorkerMessage =
+  | {
+      id: string;
+      ok: true;
+      type: "buffer";
+      result: {
+        fc4326: FeatureCollection<Geometry>;
+        fc25832: FeatureCollection<Geometry>;
+      };
+    }
+  | {
+      id: string;
+      ok: false;
+      type: "buffer";
+      error: string;
+    };
 
 // Lager buffer rundt valgte geometrier
 export default function Buffer({ isOpen, onClose }: Props) {
@@ -20,6 +35,9 @@ export default function Buffer({ isOpen, onClose }: Props) {
   const [busy, setBusy] = useState(false);
   const [isListOpen, setIsListOpen] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
+
+  const currentJobIdRef = useRef<string | null>(null);
+  const currentDistanceRef = useRef<number | null>(null);
 
   // Lukk dropdown ved klikk utenfor
   useEffect(() => {
@@ -32,6 +50,66 @@ export default function Buffer({ isOpen, onClose }: Props) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isListOpen]);
 
+  // Init / cleanup worker
+  const workerRef = useRef<Worker | null>(null);
+
+  useEffect(() => {
+    if (!workerRef.current) {
+      workerRef.current = new GeoWorker();
+    }
+    const worker = workerRef.current;
+
+    const handleMessage = (event: MessageEvent<WorkerMessage>) => {
+      const msg = event.data;
+      if (msg.type !== "buffer") return;
+      if (!currentJobIdRef.current || msg.id !== currentJobIdRef.current) return;
+
+      if (!msg.ok) {
+        setError(msg.error || "Klarte ikke å lage buffer (worker-feil).");
+        setBusy(false);
+        currentJobIdRef.current = null;
+        return;
+      }
+
+      try {
+        const { fc4326, fc25832 } = msg.result;
+
+        const layer = layers.find((l) => l.id === selectedLayerId);
+        const dist = currentDistanceRef.current ?? 0;
+
+        if (!layer) {
+          throw new Error("Fant ikke laget for buffer-resultat.");
+        }
+
+        addLayer({
+          name: `${layer.name}_BUFFER_${dist}m`,
+          sourceCrs: "EPSG:25832",
+          geojson25832: fc25832,
+          geojson4326: fc4326,
+          color: layer.color,
+          visible: true,
+        });
+
+        setBusy(false);
+        currentJobIdRef.current = null;
+        currentDistanceRef.current = null;
+        onClose();
+      } catch (e: any) {
+        console.error(e);
+        setError(e?.message || "Klarte ikke å legge til buffer-resultat.");
+        setBusy(false);
+        currentJobIdRef.current = null;
+        currentDistanceRef.current = null;
+      }
+    };
+
+    worker.addEventListener("message", handleMessage);
+    return () => {
+      worker.removeEventListener("message", handleMessage);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layers, selectedLayerId, addLayer, onClose]);
+
   // Reset felt når popupen lukkes
   useEffect(() => {
     if (!isOpen) {
@@ -40,77 +118,52 @@ export default function Buffer({ isOpen, onClose }: Props) {
       setError(null);
       setIsListOpen(false);
       setBusy(false);
+      currentJobIdRef.current = null;
+      currentDistanceRef.current = null;
     }
   }, [isOpen]);
 
-  // Funksjon for å håndtere selve bufferingen
+  // Funksjon for å håndtere selve bufferingen via worker
   function handleBuffer() {
-    const distance = parseFloat(bufferDistance); // Parse bufferDistance som tall
+    const distance = parseFloat(bufferDistance);
     if (!selectedLayerId || distance <= 0 || busy) return;
 
+    const worker = workerRef.current;
+    if (!worker) {
+      setError("Worker ikke initialisert.");
+      return;
+    }
+
+    const layer = layers.find((l) => l.id === selectedLayerId);
+    if (!layer) {
+      setError("Fant ikke valgt lag.");
+      return;
+    }
+
     setError(null);
-    setBusy(true); // Starter busy for å vise spinner
+    setBusy(true);
 
-    setTimeout(() => {
-      let success = false;
+    const jobId = crypto.randomUUID();
+    currentJobIdRef.current = jobId;
+    currentDistanceRef.current = distance;
 
-      try {
-        const layer = layers.find((l) => l.id === selectedLayerId);
-        if (!layer) {
-          throw new Error("Fant ikke valgt lag.");
-        }
+    const job = {
+      id: jobId,
+      type: "buffer" as const,
+      layer: layer.geojson4326 as FeatureCollection<Geometry>,
+      distance,
+    };
 
-        const bufferedFeatures: Feature<Geometry>[] = [];
-
-        for (const f of layer.geojson4326.features) {
-          if (!f.geometry) continue;
-
-          const buffered = turf.buffer(f as Feature<Geometry>, distance, {
-            units: "meters",
-          });
-
-          if (buffered && buffered.geometry) {
-            bufferedFeatures.push(buffered as Feature<Geometry>);
-          }
-        }
-
-        if (bufferedFeatures.length === 0) {
-          throw new Error("Fikk ikke laget buffer av dette laget.");
-        }
-
-        const buffered4326: FC<Geometry> = featureCollection(bufferedFeatures);
-        const buffered25832 = to25832(buffered4326);
-
-        // Lagrer som nytt lag, med justert navn og samme farge som originalt lag
-        addLayer({
-          name: `${layer.name}_BUFFER_${distance}m`,
-          sourceCrs: "EPSG:25832",
-          geojson25832: buffered25832,
-          geojson4326: buffered4326,
-          color: layer.color,
-          visible: true,
-        });
-
-        success = true;
-      } catch (e: any) {
-        console.error(e);
-        setError(e?.message || "Klarte ikke å lage buffer.");
-      } finally {
-        setBusy(false);
-        if (success) {
-          onClose(); // Lukker popup hvis suksess
-        }
-      }
-    }, 0);
+    worker.postMessage(job);
   }
 
   if (!isOpen) return null;
 
   const hasLayers = layers.length > 0;
   const selectedLayer = layers.find((l) => l.id === selectedLayerId) || null;
+  const distanceNumber = parseFloat(bufferDistance);
 
   // Knappene i popupen
-  const distanceNumber = parseFloat(bufferDistance);
   const actions: Action[] = busy
     ? []
     : [
@@ -128,7 +181,6 @@ export default function Buffer({ isOpen, onClose }: Props) {
         },
       ];
 
-  // HTML for popupen
   return (
     <Popup
       isOpen={isOpen}
@@ -141,7 +193,7 @@ export default function Buffer({ isOpen, onClose }: Props) {
       {busy ? (
         <div className="busy-container">
           <div className="spinner" />
-          <div className="busy-text">Lager buffer…</div>
+          <div className="busy-text">Lager buffer… </div>
         </div>
       ) : !hasLayers ? (
         <div className="warning-message">Du må laste opp data før du kan lage buffer.</div>
@@ -154,9 +206,7 @@ export default function Buffer({ isOpen, onClose }: Props) {
               <button
                 type="button"
                 className="dropdown-toggle"
-                style={{
-                  borderRadius: isListOpen ? "8px 8px 0 0" : "8px",
-                }}
+                style={{ borderRadius: isListOpen ? "8px 8px 0 0" : "8px" }}
                 onClick={() => setIsListOpen((x) => !x)}
               >
                 <span className="dropdown-text">
