@@ -19,6 +19,7 @@ const steps = [
   { anchorId: "tool-clip", text: "Klipp et datalag til å passe et annet datalag." },
   { anchorId: "tool-area", text: "Filtrer etter områder på en viss størrelse. " },
   { anchorId: "tool-current-task", text: "Oppgaven du arbeider med for øyeblikket. " },
+  { anchorId: "tool-feature-extractor", text: "Filtrer et datalag basert på attributtverdier." },
 ];
 
 export default function Welcome({ isOpen, onClose, onAfterTour, onStartTasks }: Props) {

@@ -31,7 +31,7 @@ export default function Task8({ isOpen, onClose, onBack, onAdvance }: Props8) {
 
       <p>
         Deretter bruker du feature-verktøyet for å finne de veiene hvor "vegkategori" er lik "E"
-        eller "R" (for europa- og riksvei). Lag en buffer på <strong>20 meter</strong> rundt disse
+        eller "R" (for europa- og riksvei). Lag en buffer på <strong>100 meter</strong> rundt disse
         veiene, og trekk laget med buffer fra datalaget med de mulige byggeområdene.
       </p>
 

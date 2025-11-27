@@ -225,6 +225,7 @@ export default function Union({ isOpen, onClose }: Props) {
         onClose={() => setShowNaming(false)}
         onConfirm={handleNameConfirm}
         defaultValue=""
+        placeholder="Navn på union-lag"
         title="Navngi union-lag"
         label="Skriv inn navn på det nye union-laget:"
       />

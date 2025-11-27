@@ -343,13 +343,28 @@ function runBuffer(
   layer: FeatureCollection<Geometry>,
   distance: number
 ): FeatureCollection<Geometry> {
-  const pre = preprocessPolygonLayer(layer, { dissolve: true });
+  if (!layer.features.length) {
+    throw new Error("Laget inneholder ingen geometrier.");
+  }
+
+  // Hvis laget inneholder polygoner, preprosesseres det for å gå raskere
+  const hasPolygon = layer.features.some(
+    (f) => f.geometry && (f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon")
+  );
+
+  const source: FeatureCollection<Geometry> = hasPolygon
+    ? (preprocessPolygonLayer(layer, { dissolve: true }) as FeatureCollection<Geometry>)
+    : layer;
 
   const bufferedFeatures: Feature<Geometry>[] = [];
 
-  for (const f of pre.features) {
+  for (const f of source.features) {
     if (!f.geometry) continue;
-    const buffered = turf.buffer(f as Feature<Geometry>, distance, { units: "meters" });
+
+    const buffered = turf.buffer(f as Feature<Geometry>, distance, {
+      units: "meters",
+    });
+
     if (buffered && buffered.geometry) {
       bufferedFeatures.push(buffered as Feature<Geometry>);
     }

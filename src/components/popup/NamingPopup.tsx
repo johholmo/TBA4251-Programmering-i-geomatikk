@@ -8,6 +8,7 @@ type Props = {
   title?: string;
   label?: string;
   defaultValue?: string;
+  placeholder?: string;
 };
 
 // Popup for naming layers
@@ -18,6 +19,7 @@ export default function Naming({
   title = "Navngi datalaget",
   label = "Skriv inn navn:",
   defaultValue = "",
+  placeholder = "Eks: Area of Interest",
 }: Props) {
   const [value, setValue] = useState(defaultValue);
 
@@ -53,7 +55,7 @@ export default function Naming({
           type="text"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          placeholder="Eks: Area of Interest"
+          placeholder={placeholder}
           className="naming-input"
         />
       </div>

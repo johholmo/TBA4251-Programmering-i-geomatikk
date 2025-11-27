@@ -19,14 +19,14 @@ export default function Task7({ isOpen, onClose, onBack, onAdvance }: Props7) {
       ]}
     >
       <p>
-        Det er klart man må rive litt for å bygge noe nytt, men SiT ønsker gjerne å ikke rive
+        Det er klart man må rive litt for å bygge noe nytt, men SiT ønsker gjerne å unngå og rive
         bygninger som er universitetsbygg, idrettshaller eller andre offentlige bygg som har med
         barn og unge å gjøre.
       </p>
 
       <p>
-        GeoNorge har en egen filtrering for sånne bygg, og du skal nå finne disse bygningene og
-        sørge for at vi ikke bygger nye studentboliger der.{" "}
+        GeoNorge har en egen filtrering for bygninger vi kan anvende ved hjelp av verktøyet{" "}
+        <strong>Feature Extractor</strong>.
       </p>
 
       <p>
@@ -37,7 +37,7 @@ export default function Task7({ isOpen, onClose, onBack, onAdvance }: Props7) {
       </p>
 
       <p>
-        Lag så en buffer på 20 meter rundt disse bygningene, og fjern dem fra{" "}
+        Lag så en buffer på 150 meter rundt disse bygningene, og fjern dem fra{" "}
         <em>Mulige byggeområder</em>
       </p>
     </Popup>

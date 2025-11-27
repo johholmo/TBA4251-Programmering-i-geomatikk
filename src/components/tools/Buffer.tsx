@@ -162,7 +162,7 @@ export default function Buffer({ isOpen, onClose }: Props) {
           </div>
 
           {/* Buffer-avstand */}
-          <div>
+          <div className="field-group">
             <label className="choose-layer-text">Buffer-avstand (meter)</label>
             <input
               type="number"
