@@ -24,7 +24,7 @@ export default function Task5({ isOpen, onClose, onBack, onAdvance }: Props5) {
       </p>
 
       <p>
-        Bruk <strong>Buffer</strong>-verktøyet og lag en buffer på <strong>100 meter</strong> rundt
+        Bruk <strong>Buffer</strong>-verktøyet og lag en buffer på <strong>200 meter</strong> rundt
         vannområdene.
       </p>
     </Popup>
