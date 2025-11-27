@@ -1,121 +1,287 @@
-import { useEffect, useRef } from "react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { useEffect, useRef, useState } from "react";
+import MapboxDraw from "@mapbox/mapbox-gl-draw";
+import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
+import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
 import { useLayers } from "../../context/LayersContext";
-import MapDraw from "./MapDraw";
+import Naming from "../popup/NamingPopup";
+import { randomColor } from "../../utils/commonFunctions";
+import type { FeatureCollection, Geometry } from "geojson";
 
-type LayerEntry = {
-  gj: L.GeoJSON;
-  id: string;
-  color: string;
-  visible: boolean;
-};
+mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
-// Hovedkartkomponenten som setter opp leaflet kartet og synker lagene
+// Hovedkomponent for kartet
 export default function Map() {
-  const mapRef = useRef<L.Map | null>(null); // Ref til leaflet map så vi ikke lager på nytt hver gang
-  const groupRef = useRef<L.LayerGroup | null>(null);
+  const mapContainer = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const { layers, addLayer } = useLayers();
+  const [isNamingOpen, setIsNamingOpen] = useState(false);
+  const [pendingName, setPendingNaming] = useState<FeatureCollection<Geometry> | null>(null);
+  const [drawInstance, setDrawInstance] = useState<MapboxDraw | null>(null);
 
-  // Kobler sammen react lag og leaflet lag
-  const cacheRef = useRef<globalThis.Map<string, LayerEntry>>(
-    new globalThis.Map<string, LayerEntry>()
-  );
-
-  const { layers } = useLayers();
-
+  // Initialiser mapbox kartet
   useEffect(() => {
-    // Gjør ingenting om kartet allerede er laget
-    if (mapRef.current) return;
-    // Sett opp kartet første gang, med definert center og zoom. Velger sentrum i Trondheim fordi oppgavene er definert allerede
-    const map = L.map("map", {
-      center: [63.4305, 10.3951],
+    if (mapRef.current || !mapContainer.current) return;
+    const map = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: "mapbox://styles/mapbox/streets-v12",
+      center: [10.3951, 63.4305],
       zoom: 12,
-      preferCanvas: true,
     });
-
-    // Legg til OSM bakgrunnskart fra tile server
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; OpenStreetMap contributors",
-      maxZoom: 19,
-    }).addTo(map);
-
-    // Lager dtagruppe så vi slipper å røre bakrgunnskartet og ting går fortere
-    const dataGroup = L.layerGroup().addTo(map);
-
     mapRef.current = map;
-    groupRef.current = dataGroup;
+    // Eksponer mapbox-gl map på window for zoom til lag
+    if (typeof window !== "undefined") {
+      (window as any).mapboxglMap = map;
+    }
 
-    (window as any).__leaflet_map = map;
-    (window as any).__leaflet_datagroup = dataGroup;
+    // Legg til kontroll-knapper i kartet (zoom og draw)
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: true }), "top-left");
+    const draw = new MapboxDraw({
+      displayControlsDefault: false,
+      controls: { polygon: true },
+      defaultMode: "simple_select",
+      // Styling for tegneverktøyet (AI)
+      styles: [
+        // Linjen som tegner
+        {
+          id: "gl-draw-line-active",
+          type: "line",
+          filter: ["all", ["==", "$type", "LineString"], ["==", "active", "true"]],
+          paint: {
+            "line-color": "#4a90e2",
+            "line-width": 3,
+          },
+        },
+        // Polygonet som dannes av linjene
+        {
+          id: "gl-draw-polygon-stroke-active",
+          type: "line",
+          filter: ["all", ["==", "$type", "Polygon"], ["==", "active", "true"]],
+          paint: {
+            "line-color": "#4a90e2",
+            "line-width": 3,
+          },
+        },
+        // Fyllet i polygonet som dannes av linjene
+        {
+          id: "gl-draw-polygon-fill-active",
+          type: "fill",
+          filter: ["all", ["==", "$type", "Polygon"], ["==", "active", "true"]],
+          paint: {
+            "fill-color": "#fff",
+            "fill-opacity": 0.15,
+          },
+        },
+        // Vertexene som kan dras på polygonet
+        {
+          id: "gl-draw-polygon-vertex-active",
+          type: "circle",
+          filter: ["all", ["==", "meta", "vertex"], ["==", "active", "true"]],
+          paint: {
+            "circle-radius": 7,
+            "circle-color": "#ffffff",
+            "circle-stroke-color": "#4a90e2",
+            "circle-stroke-width": 3,
+          },
+        },
+        // Nodene når de er inaktive
+        {
+          id: "gl-draw-polygon-vertex-inactive",
+          type: "circle",
+          filter: ["all", ["==", "meta", "vertex"], ["!=", "active", "true"]],
+          paint: {
+            "circle-radius": 7,
+            "circle-color": "#ffffff",
+            "circle-stroke-color": "#4a90e2",
+            "circle-stroke-width": 3,
+          },
+        },
+        // Polygonet når inaktiv
+        {
+          id: "gl-draw-polygon-stroke-inactive",
+          type: "line",
+          filter: ["all", ["==", "$type", "Polygon"], ["==", "active", "false"]],
+          paint: {
+            "line-color": "#000",
+            "line-width": 2,
+          },
+        },
+        // Fyllet i polygonet når inaktiv
+        {
+          id: "gl-draw-polygon-fill-inactive",
+          type: "fill",
+          filter: ["all", ["==", "$type", "Polygon"], ["==", "active", "false"]],
+          paint: {
+            "fill-color": "#fff",
+            "fill-opacity": 0.1,
+          },
+        },
+        // Linje når inaktiv
+        {
+          id: "gl-draw-line-inactive",
+          type: "line",
+          filter: ["all", ["==", "$type", "LineString"], ["==", "active", "false"]],
+          paint: {
+            "line-color": "#000",
+            "line-width": 2,
+          },
+        },
+      ],
+    });
+    map.addControl(draw, "top-left");
+    setDrawInstance(draw);
+    const onDrawCreate = () => {
+      const features = draw.getAll();
+      if (features && features.features && features.features.length > 0) {
+        setPendingNaming(features as FeatureCollection<Geometry>);
+        setIsNamingOpen(true);
+      }
+    };
+    map.on("draw.create", onDrawCreate);
+    map.on("draw.update", onDrawCreate);
 
     return () => {
-      cacheRef.current.forEach((e) => e.gj.remove());
-      cacheRef.current.clear();
-      dataGroup.clearLayers();
+      map.off("draw.create", onDrawCreate);
+      map.off("draw.update", onDrawCreate);
       map.remove();
       mapRef.current = null;
-      groupRef.current = null;
-      (window as any).__leaflet_map = null;
-      (window as any).__leaflet_datagroup = null;
+      if (typeof window !== "undefined" && (window as any).mapboxglMap === map) {
+        (window as any).mapboxglMap = undefined;
+      }
     };
   }, []);
 
-  // Hver gang react lagene endrer seg, så synkes leaflet lagene
+  // Håndter lagring av navn
+  const handleNaming = (name: string) => {
+    if (!pendingName) return;
+    // Legg til nytt lag i laglisten
+    addLayer({
+      name,
+      geojson4326: pendingName,
+      color: randomColor(),
+      visible: true,
+    });
+    if (drawInstance) drawInstance.deleteAll();
+    setPendingNaming(null);
+    setIsNamingOpen(false); // Lukk navngivings-popup
+  };
+
+  // Synkroniser lag i sidebaren med Mapbox-kartet
   useEffect(() => {
-    const group = groupRef.current;
-    if (!group) return;
+    const map = mapRef.current;
+    if (!map) return;
 
-    const cache = cacheRef.current;
-
-    // Fjern slettede lag fra kartet
-    const idsNow = new Set(layers.map((l) => l.id));
-    for (const [id, entry] of cache.entries()) {
-      if (!idsNow.has(id)) {
-        entry.gj.remove();
-        cache.delete(id);
+    // Funksjon for å synkronisere lag
+    function syncLayers() {
+      const m = map!;
+      const existingSources = Object.keys(m.getStyle().sources); // Eksisterende lag i kartet
+      // Fjern alle eksisterende lag og kilder
+      for (const src of existingSources) {
+        if (src.startsWith("layer-")) {
+          if (m.getLayer(src + "-fill")) m.removeLayer(src + "-fill");
+          if (m.getLayer(src + "-line")) m.removeLayer(src + "-line");
+          if (m.getLayer(src + "-circle")) m.removeLayer(src + "-circle");
+          m.removeSource(src);
+        }
       }
-    }
-
-    // Legg til lag og oppdater eksisterende (farge og synlighet)
-    for (const l of layers) {
-      const existing = cache.get(l.id);
-
-      if (!existing) {
-        const gj = L.geoJSON(l.geojson4326 as any, {
-          style: { color: l.color, weight: 1 },
-          pointToLayer: (_f, latlng) => L.circleMarker(latlng, { radius: 4, color: l.color }),
+      // Legg til alle lag fra laglisten
+      for (const l of layers) {
+        if (!l.visible) continue;
+        const srcId = `layer-${l.id}`;
+        m.addSource(srcId, {
+          type: "geojson",
+          data: l.geojson4326,
         });
-
-        if (l.visible) gj.addTo(group);
-        cache.set(l.id, { gj, id: l.id, color: l.color, visible: !!l.visible });
-      } else {
-        if (existing.visible !== l.visible) {
-          if (l.visible) existing.gj.addTo(group);
-          else existing.gj.remove();
-          existing.visible = l.visible;
-        }
-
-        if (existing.color !== l.color) {
-          existing.gj.eachLayer((sub: any) => {
-            if (sub.setStyle) sub.setStyle({ color: l.color });
-            else if (sub instanceof L.CircleMarker) sub.setStyle({ color: l.color });
+        // Polygoner
+        if (
+          l.geojson4326.features.some(
+            (f) => f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon"
+          )
+        ) {
+          // Legg til fylte polygoner
+          m.addLayer({
+            id: srcId + "-fill",
+            type: "fill",
+            source: srcId,
+            paint: {
+              "fill-color": l.color,
+              "fill-opacity": 0.4,
+            },
           });
-          existing.color = l.color;
+          // Legg til polygonkanter
+          m.addLayer({
+            id: srcId + "-line",
+            type: "line",
+            source: srcId,
+            paint: {
+              "line-color": l.color,
+              "line-width": 2,
+            },
+          });
+        }
+        // Linjer
+        if (
+          l.geojson4326.features.some(
+            (f) => f.geometry.type === "LineString" || f.geometry.type === "MultiLineString"
+          )
+        ) {
+          // Legg til
+          m.addLayer({
+            id: srcId + "-line",
+            type: "line",
+            source: srcId,
+            paint: {
+              "line-color": l.color,
+              "line-width": 2,
+            },
+          });
+        }
+        // Punkter
+        if (
+          l.geojson4326.features.some(
+            (f) => f.geometry.type === "Point" || f.geometry.type === "MultiPoint"
+          )
+        ) {
+          // Legg til
+          m.addLayer({
+            id: srcId + "-circle",
+            type: "circle",
+            source: srcId,
+            paint: {
+              "circle-color": l.color,
+              "circle-radius": 6,
+              "circle-stroke-width": 1,
+              "circle-stroke-color": "#222",
+            },
+          });
         }
       }
     }
-
-    // Rekkefølge (nederst i sidebar = øverst i kart)
-    for (const l of layers) {
-      const entry = cache.get(l.id);
-      if (entry && entry.visible) entry.gj.bringToFront();
+    // Når kartet er lastet, så synkroniseres lag
+    if (map.isStyleLoaded()) {
+      syncLayers();
+    } else {
+      map.once("load", syncLayers);
     }
+
+    return () => {
+      map.off("load", syncLayers);
+    };
   }, [layers]);
 
   return (
     <>
-      <div id="map" style={{ width: "100%", height: "100%" }} />
-      <MapDraw />
+      <div ref={mapContainer} id="map" style={{ width: "100%", height: "100%" }} />
+      <Naming
+        isOpen={isNamingOpen}
+        onClose={() => {
+          setIsNamingOpen(false);
+          setPendingNaming(null);
+        }}
+        onConfirm={handleNaming}
+        title="Navngi lag"
+        label="Skriv inn navn på polygonet du tegnet:"
+      />
     </>
   );
 }

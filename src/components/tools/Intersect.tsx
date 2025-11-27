@@ -1,33 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { useLayers } from "../../context/LayersContext";
 import type { FeatureCollection, Geometry } from "geojson";
+import { useLayers } from "../../context/LayersContext";
 import Popup, { type Action } from "../popup/Popup";
 import { isPoly } from "../../utils/geomaticFunctions";
-import GeoWorker from "../../workers/geoworkers?worker";
+import { runIntersect } from "../../workers/geoworkerClient";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
 };
 
-type WorkerMessage =
-  | {
-      id: string;
-      ok: true;
-      type: "intersect";
-      result: {
-        fc4326: FeatureCollection<Geometry>;
-        fc25832: FeatureCollection<Geometry>;
-      };
-    }
-  | {
-      id: string;
-      ok: false;
-      type: "intersect";
-      error: string;
-    };
-
-// Finner overlapp mellom to polygonlag
+// Finner overlapp mellom to polygonlag med worker
 export default function Intersect({ isOpen, onClose }: Props) {
   const { layers, addLayer } = useLayers();
   const [layerAId, setLayerAId] = useState<string>("");
@@ -39,73 +22,23 @@ export default function Intersect({ isOpen, onClose }: Props) {
   const listARef = useRef<HTMLDivElement | null>(null);
   const listBRef = useRef<HTMLDivElement | null>(null);
 
-  // Worker
-  const currentJobIdRef = useRef<string | null>(null);
-
-  // Finner polygonlagene som kan velges
+  // Polygon-lag
   const polygonLayers = layers.filter((l) =>
     l.geojson4326.features.some((f) => isPoly(f.geometry))
   );
   const hasLayers = polygonLayers.length >= 2;
 
-  // Init / cleanup worker + message handler
-  const workerRef = useRef<Worker | null>(null);
-
+  // Reset felt når popupen lukkes
   useEffect(() => {
-    if (!workerRef.current) {
-      workerRef.current = new GeoWorker();
+    if (!isOpen) {
+      setLayerAId("");
+      setLayerBId("");
+      setBusy(false);
+      setError(null);
+      setIsListAOpen(false);
+      setIsListBOpen(false);
     }
-    const worker = workerRef.current;
-
-    const handleMessage = (event: MessageEvent<WorkerMessage>) => {
-      const msg = event.data;
-      if (msg.type !== "intersect") return;
-      if (!currentJobIdRef.current || msg.id !== currentJobIdRef.current) return;
-
-      if (!msg.ok) {
-        setError(msg.error || "Klarte ikke å utføre intersect (worker-feil).");
-        setBusy(false);
-        currentJobIdRef.current = null;
-        return;
-      }
-
-      try {
-        const { fc4326, fc25832 } = msg.result;
-
-        const layerA = polygonLayers.find((l) => l.id === layerAId);
-        const layerB = polygonLayers.find((l) => l.id === layerBId);
-
-        const nameA = layerA?.name || "LagA";
-        const nameB = layerB?.name || "LagB";
-        const newName = `${nameA} ∩ ${nameB}`;
-        const color = layerA?.color ?? "#ff0000";
-
-        addLayer({
-          name: newName,
-          sourceCrs: "EPSG:25832",
-          geojson25832: fc25832,
-          geojson4326: fc4326,
-          color,
-          visible: true,
-        });
-
-        setBusy(false);
-        currentJobIdRef.current = null;
-        onClose();
-      } catch (e: any) {
-        console.error(e);
-        setError(e?.message || "Klarte ikke å legge til intersect-resultat.");
-        setBusy(false);
-        currentJobIdRef.current = null;
-      }
-    };
-
-    worker.addEventListener("message", handleMessage);
-    return () => {
-      worker.removeEventListener("message", handleMessage);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [polygonLayers, layerAId, layerBId, addLayer, onClose]);
+  }, [isOpen]);
 
   // Lukk ved klikk utenfor
   useEffect(() => {
@@ -122,28 +55,8 @@ export default function Intersect({ isOpen, onClose }: Props) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isListAOpen, isListBOpen]);
 
-  // Reset felt når popupen lukkes
-  useEffect(() => {
-    if (!isOpen) {
-      setLayerAId("");
-      setLayerBId("");
-      setBusy(false);
-      setError(null);
-      setIsListAOpen(false);
-      setIsListBOpen(false);
-      currentJobIdRef.current = null;
-    }
-  }, [isOpen]);
-
-  // Håndterer intersect via worker
-  function handleIntersect() {
+  async function handleIntersect() {
     if (!layerAId || !layerBId || layerAId === layerBId || busy) return;
-
-    const worker = workerRef.current;
-    if (!worker) {
-      setError("Worker ikke initialisert.");
-      return;
-    }
 
     const layerA = polygonLayers.find((l) => l.id === layerAId);
     const layerB = polygonLayers.find((l) => l.id === layerBId);
@@ -155,17 +68,37 @@ export default function Intersect({ isOpen, onClose }: Props) {
     setBusy(true);
     setError(null);
 
-    const jobId = crypto.randomUUID();
-    currentJobIdRef.current = jobId;
+    try {
+      const { fc4326 } = await runIntersect(
+        layerA.geojson4326 as FeatureCollection<Geometry>,
+        layerB.geojson4326 as FeatureCollection<Geometry>
+      );
 
-    const job = {
-      id: jobId,
-      type: "intersect" as const,
-      layerA: layerA.geojson4326 as FeatureCollection<Geometry>,
-      layerB: layerB.geojson4326 as FeatureCollection<Geometry>,
-    };
+      if (!fc4326.features.length) {
+        setError("Intersect ga ingen overlapp.");
+        setBusy(false);
+        return;
+      }
 
-    worker.postMessage(job);
+      const nameA = layerA.name || "LagA";
+      const nameB = layerB.name || "LagB";
+      const newName = `${nameA} ∩ ${nameB}`;
+      const color = layerA.color ?? "#ff0000";
+
+      addLayer({
+        name: newName,
+        geojson4326: fc4326,
+        color,
+        visible: true,
+      });
+
+      setBusy(false);
+      onClose();
+    } catch (e: any) {
+      console.error(e);
+      setError(e?.message || "Klarte ikke å utføre intersect.");
+      setBusy(false);
+    }
   }
 
   if (!isOpen) return null;

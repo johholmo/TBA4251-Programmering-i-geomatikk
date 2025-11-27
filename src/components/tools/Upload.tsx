@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import type { FeatureCollection, Geometry } from "geojson";
 import { useLayers } from "../../context/LayersContext";
-import { toWGS84, to25832 } from "../../utils/geomaticFunctions";
+import { toWGS84 } from "../../utils/geomaticFunctions";
 import Popup from "../popup/Popup";
 import { isEPSG25832 } from "../../utils/geomaticFunctions";
 
@@ -72,30 +72,19 @@ export default function Upload({ isOpen, onClose }: Props) {
         }
 
         let geojson4326: FeatureCollection<Geometry>;
-        let geojson25832: FeatureCollection<Geometry>;
-        let sourceCrs: string;
-
         if (isEPSG25832(parsed)) {
-          // Hvis i EPSG:25832, reprojiser til WGS84
-          geojson25832 = parsed;
+          // Konverter fra EPSG:25832 til EPSG:4326
           geojson4326 = toWGS84(parsed);
-          sourceCrs = "EPSG:25832";
         } else if (isCRS84orWGS(parsed)) {
-          // Hvis i CRS84 eller WGS84, bruk som 4326
+          // Filen er allerede i EPSG:4326 eller CRS84
           geojson4326 = parsed;
-          geojson25832 = to25832(parsed);
-          sourceCrs = "EPSG:4326";
         } else {
-          // Hvis vi ikke kan tolke fra filen, anta EPSG:25832
-          geojson25832 = parsed;
+          // Anta at filen er i en annen projeksjon og konverter til EPSG:4326
           geojson4326 = toWGS84(parsed);
-          sourceCrs = "EPSG:25832";
         }
-        // Legger til laget i sidebar
+        // Legg til laget i sidebar
         addLayer({
           name: cleanName(file.name),
-          sourceCrs,
-          geojson25832,
           geojson4326,
         });
       }

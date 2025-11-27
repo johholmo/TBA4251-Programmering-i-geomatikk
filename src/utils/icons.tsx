@@ -43,3 +43,19 @@ export const IconTrash = () => (
     <path d="M10 11v6M14 11v6" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" />
   </svg>
 );
+
+// Forstørrelsesglass for zoom
+export const IconZoom = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <circle cx="11" cy="11" r="7" stroke="#4a90e2" strokeWidth="2" />
+    <line
+      x1="16.5"
+      y1="16.5"
+      x2="22"
+      y2="22"
+      stroke="#4a90e2"
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+  </svg>
+);

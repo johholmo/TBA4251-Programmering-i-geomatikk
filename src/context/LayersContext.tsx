@@ -4,18 +4,18 @@ import { randomColor } from "../utils/commonFunctions";
 
 // Håndterer kartlag ved react
 
-// et kartlag
+// Et kartlag
 export type LayerRecord = {
   id: string;
   name: string;
-  sourceCrs: string;
-  geojson25832: FeatureCollection<Geometry>;
   geojson4326: FeatureCollection<Geometry>;
   visible: boolean;
   color: string;
+  sourceCrs?: string;
+  geojson25832?: FeatureCollection<Geometry>;
 };
 
-// typen for hele api-et vi lager
+// Lag typen for hele apiet som lages
 type LayersContextType = {
   layers: LayerRecord[];
   addLayer: (
@@ -30,42 +30,56 @@ type LayersContextType = {
   clearAll: () => void;
 };
 
+// Lager contexten
 const LayersContext = createContext<LayersContextType | null>(null);
 
+// Funksjon for å bruke contexten
 export function useLayers() {
   const ctx = useContext(LayersContext);
   if (!ctx) throw new Error("useLayers must be used within LayersProvider");
   return ctx;
 }
 
-// AI was used to suggest a structure for managing layers in a React context, including functions for adding, removing, and updating layers.
+// AI ble brukt til å foreslå en struktur for å håndtere lag i en React-kontekst, inkludert funksjoner for å legge til, fjerne og oppdatere lag.
 export function LayersProvider({ children }: { children: ReactNode }) {
   const [layers, setLayers] = useState<LayerRecord[]>([]);
 
-  // bygger API-et
+  // Bygge apiet
   const api = useMemo<LayersContextType>(
     () => ({
       layers,
-      //legg til lag
+      // Legg til lag
       addLayer: (layer) => {
         const id = crypto.randomUUID();
         const color = layer.color ?? randomColor();
         const visible = layer.visible ?? true;
-        setLayers((prev) => [...prev, { id, ...layer, color, visible } as LayerRecord]);
+        // Krever kun geojson4326
+        setLayers((prev) => [
+          ...prev,
+          {
+            id,
+            name: layer.name,
+            geojson4326: layer.geojson4326,
+            color,
+            visible,
+            ...(layer.sourceCrs ? { sourceCrs: layer.sourceCrs } : {}),
+            ...(layer.geojson25832 ? { geojson25832: layer.geojson25832 } : {}),
+          } as LayerRecord,
+        ]);
         return id;
       },
-      // fjern lag
+      // Fjern lag
       removeLayer: (id) => setLayers((prev) => prev.filter((l) => l.id !== id)),
-      // gjør synlig/usynlig
+      // Gjør synlig/usynlig
       setVisibility: (id, visible) =>
         setLayers((prev) => prev.map((l) => (l.id === id ? { ...l, visible } : l))),
-      // endre farge
+      // Endre farge
       setColor: (id, color) =>
         setLayers((prev) => prev.map((l) => (l.id === id ? { ...l, color } : l))),
-      // endre navn
+      // Endre navn
       setName: (id, name) =>
         setLayers((prev) => prev.map((l) => (l.id === id ? { ...l, name } : l))),
-      // endre rekkefølge på lagene
+      // Endre rekkefølge på lagene
       reorderLayers: (fromIndex, toIndex) =>
         setLayers((prev) => {
           const next = prev.slice();

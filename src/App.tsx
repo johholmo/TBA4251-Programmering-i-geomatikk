@@ -2,6 +2,7 @@ import { useState } from "react";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
 import Map from "./components/map/Map";
+import { Toast } from "./components/CustomToastProvider";
 import Clip from "./components/tools/Clip";
 import Upload from "./components/tools/Upload";
 import Buffer from "./components/tools/Buffer";
@@ -315,131 +316,133 @@ export default function App() {
   };
 
   return (
-    <LayersProvider key={resetKey}>
-      <div className="app-root">
-        <header className="app-header">
-          <div className="brand">
-            <span className="logo-dot" aria-hidden /> MyGIS
-          </div>
+    <Toast>
+      <LayersProvider key={resetKey}>
+        <div className="app-root">
+          <header className="app-header">
+            <div className="brand">
+              <span className="logo-dot" aria-hidden /> MyGIS
+            </div>
 
-          {/* Navbar */}
-          <Navbar
-            onUploadClick={() => setShowUpload(true)}
-            onCurrentTaskClick={handleCurrentTaskClick}
-            onOpenClipTool={() => setShowClip(true)}
-            onOpenBufferTool={() => {
-              setShowBuffer(true);
+            {/* Navbar */}
+            <Navbar
+              onUploadClick={() => setShowUpload(true)}
+              onCurrentTaskClick={handleCurrentTaskClick}
+              onOpenClipTool={() => setShowClip(true)}
+              onOpenBufferTool={() => {
+                setShowBuffer(true);
+              }}
+              onOpenDiffTool={() => setShowDifference(true)}
+              onOpenIntersectTool={() => setShowIntersect(true)}
+              onOpenUnionTool={() => setShowUnion(true)}
+              onOpenAreaFilterTool={() => setShowAreaFilter(true)}
+            />
+          </header>
+
+          {/* Sidebar */}
+          <aside className="app-sidebar">
+            <Sidebar />
+          </aside>
+
+          {/* Kart */}
+          <main className="app-main">
+            <Map />
+          </main>
+
+          {/* Popups for verktøy*/}
+          <Upload isOpen={showUpload} onClose={() => setShowUpload(false)} />
+          <Clip isOpen={showClip} onClose={() => setShowClip(false)} />
+          <Buffer isOpen={showBuffer} onClose={() => setShowBuffer(false)} />
+          <Union isOpen={showUnion} onClose={() => setShowUnion(false)} />
+          <Intersect isOpen={showIntersect} onClose={() => setShowIntersect(false)} />
+          <Difference isOpen={showDifference} onClose={() => setShowDifference(false)} />
+          <AreaFilter isOpen={showAreaFilter} onClose={() => setShowAreaFilter(false)} />
+
+          {/* Velkomst popup og gjennomgang av verktøy*/}
+          <Welcome
+            isOpen={showWelcome}
+            onClose={() => setShowWelcome(false)}
+            onAfterTour={() => {
+              setShowTour(false);
+              setShowWelcome(false);
+              openTask1();
             }}
-            onOpenDiffTool={() => setShowDifference(true)}
-            onOpenIntersectTool={() => setShowIntersect(true)}
-            onOpenUnionTool={() => setShowUnion(true)}
-            onOpenAreaFilterTool={() => setShowAreaFilter(true)}
+            onStartTasks={() => {
+              setShowWelcome(false);
+              openTask1();
+            }}
+            onStartTour={() => {
+              setShowTour(true);
+              setShowWelcome(false);
+            }}
           />
-        </header>
 
-        {/* Sidebar */}
-        <aside className="app-sidebar">
-          <Sidebar />
-        </aside>
+          {/* Tasks */}
+          <Task1 isOpen={showTask1Intro} onClose={closeTask1} onAdvance={advanceFromTask1} />
+          <Task2
+            isOpen={showTask2Intro}
+            onClose={closeTask2}
+            onBack={goBack}
+            onAdvance={advanceFromTask2}
+          />
+          <Task3
+            isOpen={showTask3Intro}
+            onClose={closeTask3}
+            onBack={goBack}
+            onAdvance={advanceFromTask3}
+          />
+          <Task4
+            isOpen={showTask4Intro}
+            onClose={closeTask4}
+            onBack={goBack}
+            onAdvance={advanceFromTask4}
+          />
+          <Task5
+            isOpen={showTask5Intro}
+            onClose={closeTask5}
+            onBack={goBack}
+            onAdvance={advanceFromTask5}
+          />
+          <Task6
+            isOpen={showTask6Intro}
+            onClose={closeTask6}
+            onBack={goBack}
+            onAdvance={advanceFromTask6}
+          />
+          <Task7
+            isOpen={showTask7Intro}
+            onClose={closeTask7}
+            onBack={goBack}
+            onAdvance={advanceFromTask7}
+          />
+          <Task8
+            isOpen={showTask8Intro}
+            onClose={closeTask8}
+            onBack={goBack}
+            onAdvance={advanceFromTask8}
+          />
+          <Task9
+            isOpen={showTask9Intro}
+            onClose={closeTask9}
+            onBack={goBack}
+            onAdvance={advanceFromTask9}
+          />
+          <Task10
+            isOpen={showTask10Intro}
+            onClose={closeTask10}
+            onBack={goBack}
+            onAdvance={advanceFromTask10}
+          />
+          <Task11
+            isOpen={showTask11Intro}
+            onClose={closeTask11}
+            onBack={goBack}
+            onAdvance={advanceFromTask11}
+          />
 
-        {/* Kart */}
-        <main className="app-main">
-          <Map />
-        </main>
-
-        {/* Popups for verktøy*/}
-        <Upload isOpen={showUpload} onClose={() => setShowUpload(false)} />
-        <Clip isOpen={showClip} onClose={() => setShowClip(false)} />
-        <Buffer isOpen={showBuffer} onClose={() => setShowBuffer(false)} />
-        <Union isOpen={showUnion} onClose={() => setShowUnion(false)} />
-        <Intersect isOpen={showIntersect} onClose={() => setShowIntersect(false)} />
-        <Difference isOpen={showDifference} onClose={() => setShowDifference(false)} />
-        <AreaFilter isOpen={showAreaFilter} onClose={() => setShowAreaFilter(false)} />
-
-        {/* Velkomst popup og gjennomgang av verktøy*/}
-        <Welcome
-          isOpen={showWelcome}
-          onClose={() => setShowWelcome(false)}
-          onAfterTour={() => {
-            setShowTour(false);
-            setShowWelcome(false);
-            openTask1();
-          }}
-          onStartTasks={() => {
-            setShowWelcome(false);
-            openTask1();
-          }}
-          onStartTour={() => {
-            setShowTour(true);
-            setShowWelcome(false);
-          }}
-        />
-
-        {/* Tasks */}
-        <Task1 isOpen={showTask1Intro} onClose={closeTask1} onAdvance={advanceFromTask1} />
-        <Task2
-          isOpen={showTask2Intro}
-          onClose={closeTask2}
-          onBack={goBack}
-          onAdvance={advanceFromTask2}
-        />
-        <Task3
-          isOpen={showTask3Intro}
-          onClose={closeTask3}
-          onBack={goBack}
-          onAdvance={advanceFromTask3}
-        />
-        <Task4
-          isOpen={showTask4Intro}
-          onClose={closeTask4}
-          onBack={goBack}
-          onAdvance={advanceFromTask4}
-        />
-        <Task5
-          isOpen={showTask5Intro}
-          onClose={closeTask5}
-          onBack={goBack}
-          onAdvance={advanceFromTask5}
-        />
-        <Task6
-          isOpen={showTask6Intro}
-          onClose={closeTask6}
-          onBack={goBack}
-          onAdvance={advanceFromTask6}
-        />
-        <Task7
-          isOpen={showTask7Intro}
-          onClose={closeTask7}
-          onBack={goBack}
-          onAdvance={advanceFromTask7}
-        />
-        <Task8
-          isOpen={showTask8Intro}
-          onClose={closeTask8}
-          onBack={goBack}
-          onAdvance={advanceFromTask8}
-        />
-        <Task9
-          isOpen={showTask9Intro}
-          onClose={closeTask9}
-          onBack={goBack}
-          onAdvance={advanceFromTask9}
-        />
-        <Task10
-          isOpen={showTask10Intro}
-          onClose={closeTask10}
-          onBack={goBack}
-          onAdvance={advanceFromTask10}
-        />
-        <Task11
-          isOpen={showTask11Intro}
-          onClose={closeTask11}
-          onBack={goBack}
-          onAdvance={advanceFromTask11}
-        />
-
-        <Done isOpen={showDone} onClose={() => setShowDone(false)} onAdvance={advanceFromDone} />
-      </div>
-    </LayersProvider>
+          <Done isOpen={showDone} onClose={() => setShowDone(false)} onAdvance={advanceFromDone} />
+        </div>
+      </LayersProvider>
+    </Toast>
   );
 }

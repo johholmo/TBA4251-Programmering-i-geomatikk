@@ -3,7 +3,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from 
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useLayers } from "../context/LayersContext";
-import { IconEye, IconEyeOff, IconTrash } from "../utils/icons";
+import { IconEye, IconEyeOff, IconTrash, IconZoom } from "../utils/icons";
 import { LAYER_PALETTE } from "../utils/commonFunctions";
 
 // Sorterbart element - gjør det mulig å dra elementene i sidebaren
@@ -46,6 +46,57 @@ function SortableItem({
 export default function Sidebar() {
   // henter lagene fra layercontext
   const { layers, setVisibility, removeLayer, reorderLayers, setColor, setName } = useLayers();
+  // For zoom-to-layer
+  const [mapInstance, setMapInstance] = useState<any>(null);
+  // Hent mapbox-gl map instance fra window
+  useEffect(() => {
+    if (typeof window !== "undefined" && (window as any).mapboxglMap) {
+      setMapInstance((window as any).mapboxglMap);
+    } else if (typeof window !== "undefined") {
+      const tryGetMap = () => {
+        if ((window as any).mapboxglMap) {
+          setMapInstance((window as any).mapboxglMap);
+        } else {
+          setTimeout(tryGetMap, 500);
+        }
+      };
+      tryGetMap();
+    }
+  }, []);
+
+  // Zoom to layer handler
+  function zoomToLayer(geojson: any) {
+    if (!mapInstance || !geojson || !geojson.features || geojson.features.length === 0) return;
+    // Finn bbox
+    const coords = geojson.features.flatMap((f: any) => {
+      if (!f.geometry) return [];
+      if (f.geometry.type === "Point") return [f.geometry.coordinates];
+      if (f.geometry.type === "MultiPoint" || f.geometry.type === "LineString")
+        return f.geometry.coordinates;
+      if (f.geometry.type === "MultiLineString" || f.geometry.type === "Polygon")
+        return f.geometry.coordinates.flat();
+      if (f.geometry.type === "MultiPolygon") return f.geometry.coordinates.flat(2);
+      return [];
+    });
+    if (!coords.length) return;
+    let minX = coords[0][0],
+      minY = coords[0][1],
+      maxX = coords[0][0],
+      maxY = coords[0][1];
+    coords.forEach(([x, y]: [number, number]) => {
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    });
+    mapInstance.fitBounds(
+      [
+        [minX, minY],
+        [maxX, maxY],
+      ],
+      { padding: 60, duration: 800 }
+    );
+  }
   const sensors = useSensors(useSensor(PointerSensor));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
@@ -145,42 +196,53 @@ export default function Sidebar() {
                         )}
                       </div>
 
-                      <div className="color-wrapper">
-                        <button
-                          className="color-chip"
-                          style={{ backgroundColor: l.color }}
-                          onClick={() => setOpenPaletteFor(paletteOpen ? null : l.id)}
-                          aria-label="Endre farge"
-                        />
-                        {paletteOpen && (
-                          <div className="color-popover" role="menu" style={{ zIndex: 9999 }}>
-                            {LAYER_PALETTE.map((c) => (
-                              <button
-                                key={c}
-                                className="color-option"
-                                style={{
-                                  backgroundColor: c,
-                                  outline: l.color === c ? "2px solid #111" : "none",
-                                }}
-                                onClick={() => {
-                                  setColor(l.id, c);
-                                  setOpenPaletteFor(null);
-                                }}
-                                aria-label={`Velg farge ${c}`}
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                      <div className="layer-actions">
+                        <div className="color-wrapper">
+                          <button
+                            className="color-chip"
+                            style={{ backgroundColor: l.color }}
+                            onClick={() => setOpenPaletteFor(paletteOpen ? null : l.id)}
+                            aria-label="Endre farge"
+                          />
+                          {paletteOpen && (
+                            <div className="color-popover" role="menu" style={{ zIndex: 9999 }}>
+                              {LAYER_PALETTE.map((c) => (
+                                <button
+                                  key={c}
+                                  className="color-option"
+                                  style={{
+                                    backgroundColor: c,
+                                    outline: l.color === c ? "2px solid #111" : "none",
+                                  }}
+                                  onClick={() => {
+                                    setColor(l.id, c);
+                                    setOpenPaletteFor(null);
+                                  }}
+                                  aria-label={`Velg farge ${c}`}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
 
-                      <button
-                        className="icon-btn danger"
-                        onClick={() => removeLayer(l.id)}
-                        aria-label="Slett lag"
-                        title="Slett lag"
-                      >
-                        <IconTrash />
-                      </button>
+                        <button
+                          className="icon-btn"
+                          onClick={() => zoomToLayer(l.geojson4326)}
+                          aria-label="Zoom til lag"
+                          title="Zoom til lag"
+                        >
+                          <IconZoom />
+                        </button>
+
+                        <button
+                          className="icon-btn danger"
+                          onClick={() => removeLayer(l.id)}
+                          aria-label="Slett lag"
+                          title="Slett lag"
+                        >
+                          <IconTrash />
+                        </button>
+                      </div>
                     </>
                   )}
                 </SortableItem>

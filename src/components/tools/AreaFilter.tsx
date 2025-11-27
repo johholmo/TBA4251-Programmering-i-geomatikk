@@ -1,33 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { useLayers } from "../../context/LayersContext";
 import type { FeatureCollection, Geometry } from "geojson";
+import { useLayers } from "../../context/LayersContext";
 import Popup, { type Action } from "../popup/Popup";
 import { isPoly } from "../../utils/geomaticFunctions";
-import GeoWorker from "../../workers/geoworkers?worker";
+import { runAreaFilter } from "../../workers/geoworkerClient";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
 };
 
-type WorkerMessage =
-  | {
-      id: string;
-      ok: true;
-      type: "areaFilter";
-      result: {
-        fc4326: FeatureCollection<Geometry>;
-        fc25832: FeatureCollection<Geometry>;
-      };
-    }
-  | {
-      id: string;
-      ok: false;
-      type: "areaFilter";
-      error: string;
-    };
-
-// Hovedkomponent for AreaFilter-verktøyet
+// Store sammenhengende områder med worker
 export default function AreaFilter({ isOpen, onClose }: Props) {
   const { layers, addLayer } = useLayers();
 
@@ -38,9 +21,6 @@ export default function AreaFilter({ isOpen, onClose }: Props) {
 
   const [isListOpen, setIsListOpen] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
-
-  const currentJobIdRef = useRef<string | null>(null);
-  const currentMinAreaRef = useRef<number | null>(null);
 
   const polygonLayers = layers.filter((l) =>
     l.geojson4326.features.some((f) => isPoly(f.geometry))
@@ -60,75 +40,6 @@ export default function AreaFilter({ isOpen, onClose }: Props) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isListOpen]);
 
-  // Init / cleanup worker
-  const workerRef = useRef<Worker | null>(null);
-
-  useEffect(() => {
-    if (!workerRef.current) {
-      workerRef.current = new GeoWorker();
-    }
-    const worker = workerRef.current;
-
-    const handleMessage = (event: MessageEvent<WorkerMessage>) => {
-      const msg = event.data;
-      if (msg.type !== "areaFilter") return;
-      if (!currentJobIdRef.current || msg.id !== currentJobIdRef.current) return;
-
-      if (!msg.ok) {
-        setError(msg.error || "Klarte ikke å finne store områder (worker-feil).");
-        setBusy(false);
-        currentJobIdRef.current = null;
-        currentMinAreaRef.current = null;
-        return;
-      }
-
-      try {
-        const { fc4326, fc25832 } = msg.result;
-        const minAreaM2 = currentMinAreaRef.current ?? 0;
-
-        if (!fc4326.features.length) {
-          setError(`Fant ingen sammenhengende områder ≥ ${minAreaM2.toLocaleString("nb-NO")} m².`);
-          setBusy(false);
-          currentJobIdRef.current = null;
-          currentMinAreaRef.current = null;
-          return;
-        }
-
-        const layer = polygonLayers.find((l) => l.id === selectedLayerId);
-        if (!layer) {
-          throw new Error("Fant ikke valgt lag for område-resultat.");
-        }
-
-        const newName = `${layer.name}_AREA_≥${minAreaM2}m2`;
-        addLayer({
-          name: newName,
-          sourceCrs: "EPSG:25832",
-          geojson25832: fc25832,
-          geojson4326: fc4326,
-          color: layer.color,
-          visible: true,
-        });
-
-        setBusy(false);
-        currentJobIdRef.current = null;
-        currentMinAreaRef.current = null;
-        onClose();
-      } catch (e: any) {
-        console.error(e);
-        setError(e?.message || "Klarte ikke å legge til områdelag.");
-        setBusy(false);
-        currentJobIdRef.current = null;
-        currentMinAreaRef.current = null;
-      }
-    };
-
-    worker.addEventListener("message", handleMessage);
-    return () => {
-      worker.removeEventListener("message", handleMessage);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [polygonLayers, selectedLayerId, addLayer, onClose]);
-
   // Reset felt når popup lukkes
   useEffect(() => {
     if (!isOpen) {
@@ -137,21 +48,12 @@ export default function AreaFilter({ isOpen, onClose }: Props) {
       setBusy(false);
       setError(null);
       setIsListOpen(false);
-      currentJobIdRef.current = null;
-      currentMinAreaRef.current = null;
     }
   }, [isOpen]);
 
-  // Hovedfunksjon for å finne og lage nytt lag med store områder via worker
-  function handleRun() {
+  async function handleRun() {
     const minAreaM2 = parseFloat(minArea);
     if (!selectedLayerId || !Number.isFinite(minAreaM2) || minAreaM2 <= 0 || busy) return;
-
-    const worker = workerRef.current;
-    if (!worker) {
-      setError("Worker ikke initialisert.");
-      return;
-    }
 
     const layer = polygonLayers.find((l) => l.id === selectedLayerId);
     if (!layer) {
@@ -162,32 +64,41 @@ export default function AreaFilter({ isOpen, onClose }: Props) {
     setError(null);
     setBusy(true);
 
-    const jobId = crypto.randomUUID();
-    currentJobIdRef.current = jobId;
-    currentMinAreaRef.current = minAreaM2;
+    try {
+      const { fc4326 } = await runAreaFilter(
+        layer.geojson4326 as FeatureCollection<Geometry>,
+        minAreaM2
+      );
 
-    const job = {
-      id: jobId,
-      type: "areaFilter" as const,
-      layer: layer.geojson4326 as FeatureCollection<Geometry>,
-      minArea: minAreaM2,
-    };
+      if (!fc4326.features.length) {
+        setError(`Fant ingen sammenhengende områder ≥ ${minAreaM2.toLocaleString("nb-NO")} m².`);
+        setBusy(false);
+        return;
+      }
 
-    worker.postMessage(job);
+      const newName = `${layer.name}_AREA_≥${minAreaM2}m2`;
+
+      addLayer({
+        name: newName,
+        geojson4326: fc4326,
+        color: layer.color,
+        visible: true,
+      });
+
+      setBusy(false);
+      onClose();
+    } catch (e: any) {
+      console.error(e);
+      setError(e?.message || "Klarte ikke å filtrere på areal.");
+      setBusy(false);
+    }
   }
-
-  if (!isOpen) return null;
 
   const minAreaValue = parseFloat(minArea);
   const actions: Action[] = busy
     ? []
     : [
-        {
-          label: "Lukk",
-          variant: "secondary",
-          onClick: onClose,
-          disabled: busy,
-        },
+        { label: "Lukk", variant: "secondary", onClick: onClose, disabled: busy },
         {
           label: "Finn områder",
           variant: "primary",
@@ -233,7 +144,6 @@ export default function AreaFilter({ isOpen, onClose }: Props) {
                   ▾
                 </span>
               </button>
-
               {isListOpen && (
                 <div className="clip-dropdown-scroll">
                   {polygonLayers.map((l) => (
@@ -260,7 +170,6 @@ export default function AreaFilter({ isOpen, onClose }: Props) {
               )}
             </div>
           </div>
-
           {/* Min areal input */}
           <div>
             <label className="choose-layer-text">Minimum areal (m²)</label>
@@ -273,7 +182,6 @@ export default function AreaFilter({ isOpen, onClose }: Props) {
               className="input-number"
             />
           </div>
-
           {error && <div className="error-message">{error}</div>}
         </div>
       )}

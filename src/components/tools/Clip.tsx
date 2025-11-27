@@ -15,8 +15,9 @@ import cleanCoords from "@turf/clean-coords";
 import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
 import booleanIntersects from "@turf/boolean-intersects";
 import Popup, { type Action } from "../popup/Popup";
-import { isPoly, turfIntersect, to25832, unionPolygons } from "../../utils/geomaticFunctions";
+import { isPoly, turfIntersect, unionPolygons } from "../../utils/geomaticFunctions";
 import { toTransparent } from "../../utils/commonFunctions";
+import { useNoOverlapToast } from "../../utils/toasts";
 
 type Props = {
   isOpen: boolean;
@@ -27,6 +28,7 @@ type Props = {
 // Maskelag er laget som ble tegnet som polygon i kartet
 export default function Clip({ isOpen, onClose }: Props) {
   const { layers, addLayer } = useLayers();
+  const showNoOverlapToast = useNoOverlapToast();
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [maskId, setMaskId] = useState<string>("");
@@ -124,6 +126,9 @@ export default function Clip({ isOpen, onClose }: Props) {
     setError(null);
     setProgress({ current: 1, total });
 
+    // Samle lag uten overlapp til å vise i toast etterpå
+    const noOverlapLayers: string[] = [];
+
     // Prosesser ett lag av gangen med setTimeout slik at det ikke ser fryst ut for brukeren
     const processLayer = (index: number) => {
       if (index >= total) {
@@ -134,6 +139,10 @@ export default function Clip({ isOpen, onClose }: Props) {
         setMaskId("");
         setIsListOpen(false);
         setIsMaskOpen(false);
+        // Vis toast hvis noen lag ikke hadde overlapp
+        if (noOverlapLayers.length > 0) {
+          showNoOverlapToast(noOverlapLayers);
+        }
         onClose();
         return;
       }
@@ -244,17 +253,15 @@ export default function Clip({ isOpen, onClose }: Props) {
             type: "FeatureCollection",
             features: outFeatures4326,
           };
-          const outFC25832 = to25832(outFC4326);
           addLayer({
             name: `${src.name}_CLIP`,
-            sourceCrs: "EPSG:25832",
-            geojson25832: outFC25832,
             geojson4326: outFC4326,
             color: src.color,
             visible: true,
           });
         } else {
-          console.log(`Ingen overlapp funnet for: ${src.name}`);
+          // Vis toast
+          noOverlapLayers.push(src.name);
         }
       } catch (e: any) {
         console.error(e);
