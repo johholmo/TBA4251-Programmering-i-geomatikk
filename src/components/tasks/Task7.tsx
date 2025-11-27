@@ -12,23 +12,33 @@ export default function Task7({ isOpen, onClose, onBack, onAdvance }: Props7) {
     <Popup
       isOpen={isOpen}
       onClose={onClose}
-      title="Oppgave 7 – Flomfaresoner"
+      title="Oppgave 7 – Unngå spesifikke bygninger"
       actions={[
         { label: "Forrige oppgave", variant: "secondary", onClick: onBack },
         { label: "Neste oppgave", variant: "primary", onClick: onAdvance },
       ]}
     >
-      <p>Det er selvsagt heller ikke så lurt å bygge i eller rundt en flomfaresone.</p>
-
       <p>
-        Last opp datasett <strong>Flomsoner</strong>, klipp det AOI, og lag en buffer på 100 meter
-        rundt flomsonene. Navngi bufferlaget for eksempel <em>Flomfaresoner</em>.
+        Det er klart man må rive litt for å bygge noe nytt, men SiT ønsker gjerne å ikke rive
+        bygninger som er universitetsbygg, idrettshaller eller andre offentlige bygg som har med
+        barn og unge å gjøre.
       </p>
 
       <p>
-        Fjern flomfaresonene fra <strong>AOI_Trondheim</strong> ved hjelp av{" "}
-        <strong>Difference</strong>
-        -verktøyet slik at det ikke bygges i disse områdene.
+        GeoNorge har en egen filtrering for sånne bygg, og du skal nå finne disse bygningene og
+        sørge for at vi ikke bygger nye studentboliger der.{" "}
+      </p>
+
+      <p>
+        Last opp datasettet <strong>Bygninger</strong> fra GitHub, og klipp det til AOI. Bruk
+        Feature Extractor til å hente ut alle bygninger der <em>bygningstype</em> har en verdi
+        mellom 600 og 699. Dette er klassifiseringer for offentlige bygg som har med barn og unge å
+        gjøre.
+      </p>
+
+      <p>
+        Lag så en buffer på 20 meter rundt disse bygningene, og fjern dem fra{" "}
+        <em>Mulige byggeområder</em>
       </p>
     </Popup>
   );

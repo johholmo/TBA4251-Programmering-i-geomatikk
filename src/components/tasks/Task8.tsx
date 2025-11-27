@@ -12,32 +12,32 @@ export default function Task8({ isOpen, onClose, onBack, onAdvance }: Props8) {
     <Popup
       isOpen={isOpen}
       onClose={onClose}
-      title="Oppgave 8 – Unngå vei og bygninger"
+      title="Oppgave 8 – Unngå veier"
       actions={[
         { label: "Forrige oppgave", variant: "secondary", onClick: onBack },
         { label: "Neste oppgave", variant: "primary", onClick: onAdvance },
       ]}
     >
       <p>
-        SiT må spare på midlene sine, og ønsker derfor å ikke måtte rive hverken vei eller bygninger
-        for å lage et nytt boligområde. I tillegg kan det være greit å ikke bygge direkte ved siden
-        av en bygning eller vei.
+        Det er også greit å bygge studentboliger litt unna store bilveier, og helst ikke midt på en
+        bilvei heller. Du skal nå fjerne veier fra de mulige byggeområdene, og i tillegg fjerne et
+        område rundt Europa- og Riksveier.
       </p>
 
       <p>
-        Last opp datasettene <strong>Vei</strong> og <strong>Bygninger</strong>. Klipp dem til AOI,
-        og navngi dem godt.
+        Last opp datasettet <strong>Vei</strong>, og klipp det til AOI. Trekk deretter dette laget
+        fra de mulige byggeområdene ved hjelp av Difference-verktøyet.
       </p>
 
       <p>
-        Lag deretter en buffer på <strong>30 meter</strong> rundt veiene, og en buffer på{" "}
-        <strong>20 meter</strong> rundt bygninger.
+        Deretter bruker du feature-verktøyet for å finne de veiene hvor "vegkategori" er lik "E"
+        eller "R" (for europa- og riksvei). Lag en buffer på <strong>20 meter</strong> rundt disse
+        veiene, og trekk laget med buffer fra datalaget med de mulige byggeområdene.
       </p>
 
       <p>
-        Bruk Difference-verktøyet for å fjerne de to bufferlagene fra datalaget som representerer de
-        mulige byggeområdene. Navngi dette datalaget <em>Mulige byggeområder</em>. For ordenens
-        skyld kan du også slette de opprinnelige veiene og bygningene, samt bufferlagene nå.
+        Navngi dette datalaget <em>Mulige byggeområder</em>. For ordenens skyld kan du også slette
+        de datalagene du ikke lenger bruker.
       </p>
     </Popup>
   );

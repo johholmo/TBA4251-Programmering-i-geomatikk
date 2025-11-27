@@ -37,7 +37,8 @@ export default function Task6({ isOpen, onClose, onBack, onAdvance }: Props6) {
 
       <p>
         Gjerne bruk knappene i oversikten til venstre for å gjøre vannområder og vannområdene med
-        buffer usynlig. Da ser du tydelig at de er fjernet fra AOI_Trondheim-laget.
+        buffer usynlig. Da ser du tydelig at disse områdene er fjernet fra det nye laget med mulige
+        byggeområder.
       </p>
     </Popup>
   );

@@ -164,7 +164,7 @@ body {
 
 .modal {
   position: relative;
-  width: min(640px, calc(100% - 32px));
+  width: 500px;
   max-width: 700px;
   border: 1px solid rgba(163, 146, 137, 0.35);
   border-radius: 18px;
@@ -905,4 +905,123 @@ body {
   :root {
     --base-font-size: 18px;
   }
+}
+
+/* Feature extractor */
+
+.popup-input {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 0.875rem;
+  background: #ffffff;
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+.popup-input:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px rgba(93, 134, 108, 0.18);
+  background: #fdfcf9;
+}
+
+.popup-input::placeholder {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+/* Container for regel-listen */
+.fe-rules {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f8f6f1;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* En rad med én regel */
+.fe-rule-row {
+  display: grid;
+  grid-template-columns: 1.6fr 0.8fr 1.6fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Hint-text over reglene */
+.fe-rules-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.fe-rules-hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* Knapp for å legge til ny regel */
+.fe-add-rule-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px dashed var(--border-darker);
+  background: #fffaf4;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  color: var(--ink-200);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.05s ease;
+}
+
+.fe-add-rule-btn:hover {
+  background: #f3efe6;
+  border-color: var(--border-2);
+  transform: translateY(-1px);
+}
+
+.fe-add-rule-btn-icon {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+/* Fjern-regel-knapp */
+.selected-layer-remove {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  line-height: 1;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.selected-layer-remove:hover:not(:disabled) {
+  background: #fcebea;
+  color: #b91c1c;
+}
+.selected-layer-remove:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }

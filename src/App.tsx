@@ -10,6 +10,7 @@ import Union from "./components/tools/Union";
 import Intersect from "./components/tools/Intersect";
 import Difference from "./components/tools/Difference";
 import AreaFilter from "./components/tools/AreaFilter";
+import FeatureExtractor from "./components/tools/FeatureExtractor";
 import { LayersProvider } from "./context/LayersContext";
 import Welcome from "./components/tasks/Welcome";
 import Task1 from "./components/tasks/Task1";
@@ -83,6 +84,7 @@ export default function App() {
   const [showIntersect, setShowIntersect] = useState(false);
   const [showDifference, setShowDifference] = useState(false);
   const [showAreaFilter, setShowAreaFilter] = useState(false);
+  const [showFeatureExtractor, setShowFeatureExtractor] = useState(false);
 
   // forrige oppgave
   const goBack = () => {
@@ -336,6 +338,7 @@ export default function App() {
               onOpenIntersectTool={() => setShowIntersect(true)}
               onOpenUnionTool={() => setShowUnion(true)}
               onOpenAreaFilterTool={() => setShowAreaFilter(true)}
+              onOpenFeatureExtractorTool={() => setShowFeatureExtractor(true)}
             />
           </header>
 
@@ -357,6 +360,10 @@ export default function App() {
           <Intersect isOpen={showIntersect} onClose={() => setShowIntersect(false)} />
           <Difference isOpen={showDifference} onClose={() => setShowDifference(false)} />
           <AreaFilter isOpen={showAreaFilter} onClose={() => setShowAreaFilter(false)} />
+          <FeatureExtractor
+            isOpen={showFeatureExtractor}
+            onClose={() => setShowFeatureExtractor(false)}
+          />
 
           {/* Velkomst popup og gjennomgang av verktøy*/}
           <Welcome
