@@ -20,13 +20,13 @@ export default function Task10({ isOpen, onClose, onBack, onAdvance }: Props10) 
     >
       <p>
         Nå har du ett datalag med områder det er <em>mulig</em> å bygge i, og ett datalag det er{" "}
-        <em>ønskelig</em> å bygge i. Du skal nå finne de områdene som er innenfor begge disse
-        kategoriene.{" "}
+        <em>ønskelig</em> å bygge i. Du må finne de områdene som er innenfor begge disse
+        kategoriene.
       </p>
 
       <p>
-        Bruk <strong>Intersect</strong>-verktøyet til å finne de områdene som overlapper i datalaget{" "}
-        <em>Mulige byggeområder</em> og datalaget <em>Ønskede bygningsområder</em>.
+        Bruk <strong>Intersect</strong>-verktøyet til å finne de områdene som overlapper i
+        datalagene <em>Mulige byggeområder</em> og <em>Ønskede bygningsområder</em>.
       </p>
 
       <p>

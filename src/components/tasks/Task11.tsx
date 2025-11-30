@@ -19,14 +19,14 @@ export default function Task11({ isOpen, onClose, onBack, onAdvance }: Props11) 
       ]}
     >
       <p>
-        Nå har du funnet alle trygge og ønskede områder, men området må jo også være stort nok til å
-        få plass til en studentbolig. SiT ønsker et sammenhengende område på minst 300 kvadratmeter
-        for å få plass til sin nye studentblokk.
+        Du har nå funnet trygge og ønskede områder å bygge studentboliger på, men området må også
+        være stort nok til å få plass til studentboliger. SiT ønsker et sammenhengende område på
+        minst 800 kvadratmeter for å få plass til bygningene.
       </p>
 
       <p>
-        Bruk verktøyet <strong>Area Filter</strong> til å finne områdene i datalaget "Trygge og
-        ønskede områder" fra forrige oppgave som er minst 300 kvadratmeter.
+        Bruk <strong>Area Filter</strong>-verktøyet til å finne områdene i datalaget fra forrige
+        oppgave som er minst 800 kvadratmeter.
       </p>
     </Popup>
   );

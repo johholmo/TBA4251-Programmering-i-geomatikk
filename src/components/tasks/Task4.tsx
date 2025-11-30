@@ -19,17 +19,17 @@ export default function Task4({ isOpen, onClose, onBack, onAdvance }: Props4) {
       ]}
     >
       <p>
-        Nå skal du sørge for at det ikke bygges på noen vannområder. Last opp datasettene{" "}
-        <strong>Innsjø</strong>, <strong>Kanal</strong>, <strong>Elv</strong> og{" "}
-        <strong>Havflate</strong> fra GitHub, og klipp dem til AOI. Da kan du slette de originale
-        lagene.
+        Først og fremst skal du sørge for at SiT ikke bygger nye studentboliger i vannområder. Last
+        opp datasettene <strong>Innsjø</strong>, <strong>Kanal</strong>, <strong>Elv</strong> og{" "}
+        <strong>Havflate</strong> fra GitHub, og klipp dem til AOI (slik som i forrige oppgave).
+        Slett de originale lagene for å holde oversikten ryddig.
       </p>
 
       <p>
-        Siden alle disse representerer vann, kan du slå dem sammen til ett lag. Bruk{" "}
-        <strong>Union</strong>-verktøyet for å samle dem i ett lag. Navngi og fargelegg laget
-        passende, for eksempel <em>Vannområder</em> i blå farge. Da kan du slette de individuelle
-        lagene.
+        Alle disse datalagene representerer vann, så hvorfor ikke slå dem sammen til ett lag? Bruk{" "}
+        <strong>Union</strong>-verktøyet for å slå sammen de klippede datalagene for vann til ett
+        lag. Navngi og fargelegg laget passende, for eksempel <em>Vannområder</em> i blå farge.
+        Slette de individuelle lagene.
       </p>
     </Popup>
   );

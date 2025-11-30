@@ -19,8 +19,8 @@ export default function Task2({ isOpen, onClose, onBack, onAdvance }: Props) {
       ]}
     >
       <p>
-        I kartet ser du nå et polygon som dekker hele Trondheim Kommune. Det er ikke nødvendig å se
-        på et så stort område, så du skal nå begrense analysen til et mindre område som er mer
+        I kartet ser du nå et polygon som dekker hele Trondheim Kommune. Det er ikke nødvendig å
+        analysere et så stort område, så du skal nå begrense analysen til et mindre område mer
         aktuelt for studentboliger.
       </p>
 

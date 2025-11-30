@@ -17,6 +17,8 @@ type Rule = {
   value: string;
 };
 
+type LogicalOp = "AND" | "OR";
+
 // Filtrerer et lag basert på attributtverdier
 export default function FeatureExtractor({ isOpen, onClose }: Props) {
   const { layers, addLayer } = useLayers();
@@ -33,6 +35,7 @@ export default function FeatureExtractor({ isOpen, onClose }: Props) {
   const operations: Operation[] = ["=", "≠", "<", ">"];
 
   const selectedLayer = layers.find((l) => l.id === selectedLayerId) || null;
+  const [logicalOp, setLogicalOp] = useState<LogicalOp>("AND");
 
   // Lukk dropdown når man klikker utenfor
   useEffect(() => {
@@ -55,6 +58,7 @@ export default function FeatureExtractor({ isOpen, onClose }: Props) {
       setBusy(false);
       setError(null);
       setIsListOpen(false);
+      setLogicalOp("AND");
     }
   }, [isOpen]);
 
@@ -116,8 +120,16 @@ export default function FeatureExtractor({ isOpen, onClose }: Props) {
     return false;
   }
 
+  // Kombiner regler med valgt logisk operator
   function matchesAll(f: Feature<Geometry>): boolean {
-    return rules.every((r) => matchesRule(f, r));
+    const validRules = rules.filter((r) => r.property && r.op && r.value.trim() !== "");
+    if (!validRules.length) return true;
+
+    if (logicalOp === "AND") {
+      return validRules.every((r) => matchesRule(f, r));
+    }
+    // logicalOp === "OR"
+    return validRules.some((r) => matchesRule(f, r));
   }
 
   function handleExtract() {
@@ -232,80 +244,103 @@ export default function FeatureExtractor({ isOpen, onClose }: Props) {
                 </div>
               )}
             </div>
+
+            {/* Regler */}
+            {selectedLayer && uniqueProperties.length > 0 && (
+              <>
+                <div className="fe-rules-header">
+                  <div className="choose-layer-text">Regler</div>
+                </div>
+
+                <div className="fe-rules-mode">
+                  <div className="fe-rules-hint">Velg hvordan reglene skal kombineres:</div>
+
+                  <label className="fe-radio-option">
+                    <input
+                      type="radio"
+                      name="fe-logical-op"
+                      value="AND"
+                      checked={logicalOp === "AND"}
+                      onChange={() => setLogicalOp("AND")}
+                    />
+                    <span>Alle regler må være oppfylt (AND)</span>
+                  </label>
+
+                  <label className="fe-radio-option">
+                    <input
+                      type="radio"
+                      name="fe-logical-op"
+                      value="OR"
+                      checked={logicalOp === "OR"}
+                      onChange={() => setLogicalOp("OR")}
+                    />
+                    <span>Minst én regel må være oppfylt (OR)</span>
+                  </label>
+                </div>
+
+                <div className="fe-rules">
+                  {rules.map((rule, idx) => (
+                    <div key={idx} className="fe-rule-row">
+                      {/* Property */}
+                      <select
+                        className="popup-input"
+                        value={rule.property}
+                        onChange={(e) => updateRule(idx, { property: e.target.value })}
+                      >
+                        <option value="">Attributt…</option>
+                        {uniqueProperties.map((p) => (
+                          <option key={p} value={p}>
+                            {p}
+                          </option>
+                        ))}
+                      </select>
+
+                      {/* Operator */}
+                      <select
+                        className="popup-input"
+                        value={rule.op}
+                        onChange={(e) => updateRule(idx, { op: e.target.value as Operation })}
+                      >
+                        <option value="">Op.</option>
+                        {operations.map((op) => (
+                          <option key={op} value={op}>
+                            {op}
+                          </option>
+                        ))}
+                      </select>
+
+                      {/* Value */}
+                      <input
+                        type="text"
+                        className="popup-input"
+                        placeholder="Verdi"
+                        value={rule.value}
+                        onChange={(e) => updateRule(idx, { value: e.target.value })}
+                      />
+
+                      {/* Fjern-regel */}
+                      <button
+                        type="button"
+                        className="selected-layer-remove"
+                        onClick={() => removeRule(idx)}
+                        disabled={rules.length === 1}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <button type="button" className="fe-add-rule-btn" onClick={addRule}>
+                  <span className="fe-add-rule-btn-icon">+</span>
+                  <span>Legg til en regel</span>
+                </button>
+              </>
+            )}
           </div>
 
-          {/* Regler */}
-          {selectedLayer && uniqueProperties.length > 0 && (
-            <>
-              <div className="fe-rules-header">
-                <div className="choose-layer-text">Regler</div>
-                <span className="fe-rules-hint">
-                  Legger du til flere regler så vil alle gjelde.{" "}
-                </span>
-              </div>
-
-              <div className="fe-rules">
-                {rules.map((rule, idx) => (
-                  <div key={idx} className="fe-rule-row">
-                    {/* Property */}
-                    <select
-                      className="popup-input"
-                      value={rule.property}
-                      onChange={(e) => updateRule(idx, { property: e.target.value })}
-                    >
-                      <option value="">Attributt…</option>
-                      {uniqueProperties.map((p) => (
-                        <option key={p} value={p}>
-                          {p}
-                        </option>
-                      ))}
-                    </select>
-
-                    {/* Operator */}
-                    <select
-                      className="popup-input"
-                      value={rule.op}
-                      onChange={(e) => updateRule(idx, { op: e.target.value as Operation })}
-                    >
-                      <option value="">Op.</option>
-                      {operations.map((op) => (
-                        <option key={op} value={op}>
-                          {op}
-                        </option>
-                      ))}
-                    </select>
-
-                    {/* Value */}
-                    <input
-                      type="text"
-                      className="popup-input"
-                      placeholder="Verdi"
-                      value={rule.value}
-                      onChange={(e) => updateRule(idx, { value: e.target.value })}
-                    />
-
-                    {/* Fjern-regel */}
-                    <button
-                      type="button"
-                      className="selected-layer-remove"
-                      onClick={() => removeRule(idx)}
-                      disabled={rules.length === 1}
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              <button type="button" className="fe-add-rule-btn" onClick={addRule}>
-                <span className="fe-add-rule-btn-icon">+</span>
-                <span>Legg til regel</span>
-              </button>
-            </>
-          )}
-
           {selectedLayer && uniqueProperties.length === 0 && (
-            <div className="warning-message">Dette laget inneholder ingen attributter.</div>
+            <div className="warning-message">Dette laget har ingen attributter.</div>
           )}
 
           {error && <div className="error-message">{error}</div>}

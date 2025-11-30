@@ -1025,3 +1025,27 @@ body {
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+.fe-rules-mode {
+  margin-bottom: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fe-radio-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--ink-200);
+}
+
+.fe-radio-option input[type="radio"] {
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+
+.fe-radio-option span {
+  cursor: pointer;
+}

@@ -1,4 +1,4 @@
-import { useToast } from "../components/CustomToastProvider";
+import { useToast } from "./CustomToastProvider";
 
 // React hook versjon til å bruke inne i komponenter
 export function useNoOverlapToast() {

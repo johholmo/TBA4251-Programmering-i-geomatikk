@@ -19,20 +19,23 @@ export default function Task8({ isOpen, onClose, onBack, onAdvance }: Props8) {
       ]}
     >
       <p>
-        Det er også greit å bygge studentboliger litt unna store bilveier, og helst ikke midt på en
-        bilvei heller. Du skal nå fjerne veier fra de mulige byggeområdene, og i tillegg fjerne et
-        område rundt Europa- og Riksveier.
+        SiT ønsker også å bygge studentboligene vekke fra store bilveier, og helst ikke midt på en
+        vei heller. Derfor skal du fjerne veier fra de mulige byggeområdene, og i tillegg fjerne et
+        buffersone rundt Europa- og Riksveier.
       </p>
 
       <p>
-        Last opp datasettet <strong>Vei</strong>, og klipp det til AOI. Trekk deretter dette laget
-        fra de mulige byggeområdene ved hjelp av Difference-verktøyet.
+        Last opp datasettet <strong>Vei</strong>, og klipp det til AOI. Bruk{" "}
+        <strong>Difference</strong>-verktøyet og fjern veiene fra datalaget med mulige byggeområder,
+        slik som du har gjort i tidligere oppgaver. Dette er trolig mange veier som skal fjernes, så
+        ikke bli overrasket om det tar litt tid.
       </p>
 
       <p>
-        Deretter bruker du feature-verktøyet for å finne de veiene hvor "vegkategori" er lik "E"
-        eller "R" (for europa- og riksvei). Lag en buffer på <strong>100 meter</strong> rundt disse
-        veiene, og trekk laget med buffer fra datalaget med de mulige byggeområdene.
+        Bruk deretter <strong>Feature Extractor</strong>-verktøyet for å finne de veiene hvor
+        "vegkategori" er lik "E" <em>eller</em> "R" (for europa- og riksvei). Lag en buffer på{" "}
+        <strong>100 meter</strong> rundt disse veiene, og trekk laget med buffer fra de mulige
+        byggeområdene.
       </p>
 
       <p>

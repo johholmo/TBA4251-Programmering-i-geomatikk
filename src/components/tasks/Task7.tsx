@@ -19,26 +19,22 @@ export default function Task7({ isOpen, onClose, onBack, onAdvance }: Props7) {
       ]}
     >
       <p>
-        Det er klart man må rive litt for å bygge noe nytt, men SiT ønsker gjerne å unngå og rive
-        bygninger som er universitetsbygg, idrettshaller eller andre offentlige bygg som har med
-        barn og unge å gjøre.
-      </p>
-
-      <p>
-        GeoNorge har en egen filtrering for bygninger vi kan anvende ved hjelp av verktøyet{" "}
-        <strong>Feature Extractor</strong>.
+        Det er klart man må rive litt for å bygge noe nytt, men SiT vil gjerne unngå å rive
+        bygninger som universitetsbygg, idrettshaller eller andre offentlige bygg for barn og unge.
+        Heldigvis har GeoNorge, som all data til denne analysen er hentet fra, en egen filtrering
+        for slike bygninger.
       </p>
 
       <p>
         Last opp datasettet <strong>Bygninger</strong> fra GitHub, og klipp det til AOI. Bruk
-        Feature Extractor til å hente ut alle bygninger der <em>bygningstype</em> har en verdi
-        mellom 600 og 699. Dette er klassifiseringer for offentlige bygg som har med barn og unge å
-        gjøre.
+        <strong>Feature Extractor</strong>-verktøyet til å hente ut alle bygninger der{" "}
+        <em>bygningstype</em> har en verdi mellom 600 og 699. Dette er bygningstypene som
+        representerer offentlige bygg for barn og unge.
       </p>
 
       <p>
         Lag så en buffer på 150 meter rundt disse bygningene, og fjern dem fra{" "}
-        <em>Mulige byggeområder</em>
+        <em>Mulige byggeområder</em>.
       </p>
     </Popup>
   );

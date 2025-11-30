@@ -19,8 +19,8 @@ export default function Task5({ isOpen, onClose, onBack, onAdvance }: Props5) {
       ]}
     >
       <p>
-        For å være på den sikre siden er det ikke ønskelig å bygge helt inntil vannområder. Du skal
-        derfor lage en sone rundt vannområdene hvor det ikke skal bygges.
+        For å være på den sikre siden vil ikke SiT bygge så nærme vannområder heller. Du skal derfor
+        lage en buffersone rundt vannområdene det ikke skal bygges i.
       </p>
 
       <p>

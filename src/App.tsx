@@ -2,7 +2,7 @@ import { useState } from "react";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
 import Map from "./components/map/Map";
-import { Toast } from "./components/CustomToastProvider";
+import { Toast } from "./utils/CustomToastProvider";
 import Clip from "./components/tools/Clip";
 import Upload from "./components/tools/Upload";
 import Buffer from "./components/tools/Buffer";
@@ -214,7 +214,7 @@ export default function App() {
     setLastTask("task10");
   };
   const openTask11 = () => {
-    setShowTask10Intro(true);
+    setShowTask11Intro(true);
     setLastTask("task11");
   };
 

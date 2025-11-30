@@ -15,7 +15,7 @@ export default function Task1({ isOpen, onClose, onAdvance }: Props1) {
       actions={[{ label: "Neste oppgave", variant: "primary", onClick: onAdvance }]}
     >
       <p>
-        Først og fremst skal du laste opp data. Du finner alle datasett i GitHub-repoet, i mappen{" "}
+        Først og fremst skal du laste opp data. Du finner alle datasettene i GitHub-repoet, i mappen{" "}
         <a
           href="https://github.com/johholmo/TBA4251-Programmering-i-geomatikk/tree/main/data"
           target="_blank"
@@ -27,16 +27,16 @@ export default function Task1({ isOpen, onClose, onAdvance }: Props1) {
       </p>
 
       <p>
-        Bruk verktøyet «Last opp data» i verktøylinjen, og last opp filen{" "}
+        Bruk <strong>Last opp data</strong>-verktøyet i verktøylinjen, og last opp filen{" "}
         <strong>Trondheim_Kommune.geojson</strong>.
       </p>
 
       <p>
         💡 Etter hvert som du løser oppgavene vil du ha behov for å laste opp flere datasett. Det
-        kan være lurt å ikke laste opp alt på en gang, så kartet holder seg ryddig og raskt.
+        kan være lurt å ikke laste opp alt på en gang, slik at kartet holder seg ryddig og raskt.
       </p>
       <p>
-        Lukk dette viduet for å løse oppgaven. Hvis du lurer på noe finner du oppgaven igjen oppe i
+        Lukk dette vinduet for å løse oppgaven. Hvis du lurer på noe finner du oppgaven igjen oppe i
         høyre hjørne, og det er også her du går videre til neste oppgave når du er ferdig.
       </p>
     </Popup>

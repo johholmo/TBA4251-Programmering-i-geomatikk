@@ -1,13 +1,14 @@
 /* eslint-disable no-restricted-globals */
 /// <reference lib="webworker" />
 export {};
-// Hjelp fra AI til å skrive geo-worker. Måtte flytte ting ut i worker for at nettsiden ikke skulle krasje.
+// Hjelp fra AI til å skrive geo-worker. Måtte flytte ting ut fra verktøy til worker for at nettsiden ikke skulle krasje.
 import type { Feature, FeatureCollection, Geometry, Polygon, MultiPolygon } from "geojson";
 
 import bbox from "@turf/bbox";
 import booleanIntersects from "@turf/boolean-intersects";
 import cleanCoords from "@turf/clean-coords";
-import * as turf from "@turf/turf";
+import buffer from "@turf/buffer";
+import area from "@turf/area";
 import flatten from "@turf/flatten";
 import dissolve from "@turf/dissolve";
 
@@ -78,6 +79,7 @@ type GeoError = {
 type GeoResponse = GeoSuccess | GeoError;
 
 // Funksjoner originalt fra tsx filer i tools mappen, men flyttet hit for å gjøre den tunge jobben i worker istedenfor
+
 // hjelpefunksjon for å preprosesser polygonlag for raske operasjoner
 function preprocessPolygonLayer(
   layer: FeatureCollection<Geometry>,
@@ -361,7 +363,7 @@ function runBuffer(
   for (const f of source.features) {
     if (!f.geometry) continue;
 
-    const buffered = turf.buffer(f as Feature<Geometry>, distance, {
+    const buffered = buffer(f as Feature<Geometry>, distance, {
       units: "meters",
     });
 
@@ -416,8 +418,8 @@ function runAreaFilter(
   const bigPolys: Feature<Geometry>[] = [];
 
   for (const p of singlePolys) {
-    const area = turf.area(p);
-    if (area >= minArea) {
+    const currentArea = area(p);
+    if (currentArea >= minArea) {
       bigPolys.push(p as Feature<Geometry>);
     }
   }

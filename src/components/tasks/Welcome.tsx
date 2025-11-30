@@ -12,14 +12,14 @@ type Props = {
 
 const steps = [
   { anchorId: "tool-upload", text: "Laste opp data i GeoJSON format." },
-  { anchorId: "tool-buffer", text: "Lag en buffer rundt objekter (f.eks. 200 m fra vann)." },
+  { anchorId: "tool-buffer", text: "Lag et bufferområde rundt objekter (f.eks. 200 m fra vann)." },
   { anchorId: "tool-intersect", text: "Behold kun overlappen mellom to datalag." },
   { anchorId: "tool-union", text: "Slå sammen flere datalag til ett." },
-  { anchorId: "tool-diff", text: "Fjern et datalag fra et annet for å finne differansen." },
+  { anchorId: "tool-diff", text: "Fjern et datalag fra et annet." },
   { anchorId: "tool-clip", text: "Klipp et datalag til å passe et annet datalag." },
   { anchorId: "tool-area", text: "Filtrer etter områder på en viss størrelse. " },
-  { anchorId: "tool-current-task", text: "Oppgaven du arbeider med for øyeblikket. " },
   { anchorId: "tool-feature-extractor", text: "Filtrer et datalag basert på attributtverdier." },
+  { anchorId: "tool-current-task", text: "Oppgaven du arbeider med for øyeblikket. " },
 ];
 
 export default function Welcome({ isOpen, onClose, onAfterTour, onStartTasks }: Props) {
@@ -49,15 +49,14 @@ export default function Welcome({ isOpen, onClose, onAfterTour, onStartTasks }: 
       >
         <p>
           Du skal nå jobbe som <strong>GIS-analytiker</strong> og har fått i oppgave å finne egnede
-          områder der Studentsamskipnaden i Trondheim (SiT) kan bygge nye studentboliger. Gjennom
-          denne gjennomgangen vil du bruke flere GIS-verktøy og løse oppgaver som steg for steg
-          fører deg frem til de optimale områdene for en slik utbygging.
+          områder der Studentsamskipnaden i Trondheim (SiT) kan bygge nye studentboliger. Denne
+          gjennomgangen vil lære deg å bruke flere GIS-verktøy gjennom å løse oppgaver som steg for
+          steg fører deg frem til de optimale områdene for en slik utbygging.
         </p>
 
         <p>
-          Ønsker du en introduksjon til verktøyene du skal bruke, kan du ta en rask omvisning.
-          Dersom du allerede er klar for å starte analysen, er det bare å hoppe rett inn i
-          oppgavene.
+          Ønsker du en introduksjon til verktøyene du skal bruke, eller er du klar for å starte
+          analysen med første oppgave?
         </p>
       </Popup>
 
