@@ -1,73 +1,58 @@
-# React + TypeScript + Vite
+# TBA4251 Programmering i Geomatikk
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Dette prosjektet er en interaktiv webapplikasjon for geomatikkfaget TBA4251 ved NTNU. Applikasjonen lar brukere utføre ulike GIS-operasjoner på geografiske datasett, med fokus på analyse av byggeområder, veier, vannflater og andre relevante lag for Trondheim kommune og NTNU-campuser.
 
-Currently, two official plugins are available:
+Applikasjonen kan finnes på https://johholmo.github.io/TBA4251-Programmering-i-geomatikk/.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Hovedfunksjoner
 
-## React Compiler
+- **Kartvisning** med Mapbox GL og Leaflet
+- **Laster opp og visualiserer GeoJSON-lag**
+- **Verktøy for GIS-analyse:**
+  - Klipp (Clip)
+  - Buffer
+  - Union
+  - Intersect
+  - Difference
+  - AreaFilter (filter på areal)
+  - FeatureExtractor (filter på attributter)
+- **Oppgavesystem** med veiledning for stegvis GIS-analyse
+- **Sidebar for laghåndtering** (synlighet, rekkefølge, sletting, zoom)
+- **Popup-dialoger** for verktøy og oppgaver
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Teknologi
 
-## Expanding the ESLint configuration
+- React + TypeScript
+- Vite
+- Mapbox GL, Leaflet, Turf.js
+- Zustand for state management
+- Eslint og Prettier for kodekvalitet
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Datasett
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+GeoJSON-filer ligger i `data/`-mappen:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- Bygning.geojson
+- Elv.geojson
+- Havflate.geojson
+- Innsjø.geojson
+- Kanal.geojson
+- NTNU_campuser.geojson
+- Trondheim_kommune.geojson
+- Vei.geojson
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Mappestruktur
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- `src/` – Kildekode
+  - `components/` – UI-komponenter og GIS-verktøy
+  - `context/` – Zustand context for lag
+  - `stores/` – Zustand store for lag
+  - `types/` – Type-definisjoner
+  - `utils/` – Fellesfunksjoner og ikoner
+  - `workers/` – Web workers for tunge GIS-operasjoner
+- `data/` – GeoJSON datasett
+- `public/` – Offentlige filer
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Oppgaver
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Applikasjonen inneholder 11 oppgaver som guider brukeren gjennom GIS-analyse, fra opplasting av lag til avanserte operasjoner som buffer, klipp og attributtfiltrering.

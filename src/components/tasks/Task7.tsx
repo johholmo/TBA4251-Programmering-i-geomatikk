@@ -26,7 +26,7 @@ export default function Task7({ isOpen, onClose, onBack, onAdvance }: Props7) {
       </p>
 
       <p>
-        Last opp datasettet <strong>Bygninger</strong> fra GitHub, og klipp det til AOI. Bruk
+        Last opp datasettet <strong>Bygninger</strong> fra GitHub, og klipp det til AOI. Bruk{" "}
         <strong>Feature Extractor</strong>-verktøyet til å hente ut alle bygninger der{" "}
         <em>bygningstype</em> har en verdi mellom 600 og 699. Dette er bygningstypene som
         representerer offentlige bygg for barn og unge.

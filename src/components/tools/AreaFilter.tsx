@@ -176,7 +176,6 @@ export default function AreaFilter({ isOpen, onClose }: Props) {
             <input
               type="number"
               min={1}
-              step={1}
               value={minArea}
               onChange={(e) => setMinArea(e.target.value)}
               className="input-number"

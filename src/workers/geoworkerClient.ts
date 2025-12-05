@@ -39,7 +39,6 @@ type UnionJob = BaseJob & {
 
 type GeoJob = DifferenceJob | IntersectJob | BufferJob | AreaFilterJob | UnionJob;
 
-// Matcher NY geoworkers.ts
 type GeoSuccess = {
   id: string;
   ok: true;
@@ -58,7 +57,6 @@ type GeoError = {
 
 type GeoResponse = GeoSuccess | GeoError;
 
-// Det vi eksponerer til verktøyene
 export type GeoResult = {
   fc4326: FeatureCollection<Geometry>;
 };

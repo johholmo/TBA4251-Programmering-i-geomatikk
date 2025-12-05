@@ -469,7 +469,7 @@ function runUnion(layers: FeatureCollection<Geometry>[]): FeatureCollection<Geom
     return union4326;
   }
 
-  // 4) Union av alle lag-unionene
+  // Union av alle lag-unionene
   const finalUnion = unionPolygons(perLayerUnion);
   if (!finalUnion || !finalUnion.geometry) {
     throw new Error("Klarte ikke å lage union av lagene.");
@@ -482,9 +482,6 @@ function runUnion(layers: FeatureCollection<Geometry>[]): FeatureCollection<Geom
 
   return union4326;
 }
-
-// Worker message handler (hjelp fra AI)
-console.log("geoWorker loaded");
 
 self.onmessage = (event: MessageEvent<GeoJob>) => {
   const job = event.data;

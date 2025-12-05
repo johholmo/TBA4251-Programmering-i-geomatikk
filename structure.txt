@@ -1,0 +1,79 @@
+.
+├── README.md
+├── data
+│   ├── Bygning.geojson
+│   ├── Elv.geojson
+│   ├── Havflate.geojson
+│   ├── Innsjø.geojson
+│   ├── Kanal.geojson
+│   ├── NTNU_campuser.geojson
+│   ├── Trondheim_kommune.geojson
+│   └── Vei.geojson
+├── eslint.config.js
+├── index.html
+├── package-lock.json
+├── package.json
+├── public
+│   └── vite.svg
+├── src
+│   ├── App.tsx
+│   ├── assets
+│   │   └── react.svg
+│   ├── components
+│   │   ├── Navbar.tsx
+│   │   ├── Sidebar.tsx
+│   │   ├── ToolTour.tsx
+│   │   ├── ToolbarButton.tsx
+│   │   ├── map
+│   │   │   └── Map.tsx
+│   │   ├── popup
+│   │   │   ├── NamingPopup.tsx
+│   │   │   └── Popup.tsx
+│   │   ├── tasks
+│   │   │   ├── Done.tsx
+│   │   │   ├── Task1.tsx
+│   │   │   ├── Task10.tsx
+│   │   │   ├── Task11.tsx
+│   │   │   ├── Task2.tsx
+│   │   │   ├── Task3.tsx
+│   │   │   ├── Task4.tsx
+│   │   │   ├── Task5.tsx
+│   │   │   ├── Task6.tsx
+│   │   │   ├── Task7.tsx
+│   │   │   ├── Task8.tsx
+│   │   │   ├── Task9.tsx
+│   │   │   └── Welcome.tsx
+│   │   └── tools
+│   │       ├── AreaFilter.tsx
+│   │       ├── Buffer.tsx
+│   │       ├── Clip.tsx
+│   │       ├── Difference.tsx
+│   │       ├── FeatureExtractor.tsx
+│   │       ├── Intersect.tsx
+│   │       ├── Union.tsx
+│   │       └── Upload.tsx
+│   ├── context
+│   │   └── LayersContext.tsx
+│   ├── index.css
+│   ├── main.tsx
+│   ├── stores
+│   │   └── layers.ts
+│   ├── styles.css
+│   ├── types
+│   │   └── reproject.d.ts
+│   ├── utils
+│   │   ├── CustomToastProvider.tsx
+│   │   ├── commonFunctions.ts
+│   │   ├── geomaticFunctions.ts
+│   │   ├── icons.tsx
+│   │   └── toasts.ts
+│   └── workers
+│       ├── geoworkerClient.ts
+│       └── geoworkers.ts
+├── structure.txt
+├── tsconfig.app.json
+├── tsconfig.json
+├── tsconfig.node.json
+└── vite.config.ts
+
+15 directories, 62 files

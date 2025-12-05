@@ -54,11 +54,6 @@ function forward25832to4326([x, y]: Position): [number, number] {
   const [lon, lat] = proj4("EPSG:25832", "EPSG:4326", [x, y]) as [number, number];
   return [lon, lat];
 }
-// Lat/lon -> meter
-function inverse4326to25832([lon, lat]: Position): [number, number] {
-  const [x, y] = proj4("EPSG:4326", "EPSG:25832", [lon, lat]) as [number, number];
-  return [x, y];
-}
 // Rekursivt mappe koordinater. Sjekker om coords er en enkelt posisjon eller en liste av posisjoner
 function mapCoords(coords: any, fn: (p: Position) => [number, number]): any {
   if (Array.isArray(coords) && typeof coords[0] === "number") {
@@ -82,14 +77,6 @@ export function toWGS84(fc: FeatureCollection<Geometry>): FeatureCollection<Geom
   const features: Feature<Geometry>[] = fc.features.map((f) => {
     if (!f.geometry) return f;
     return { ...f, geometry: transformGeometry(f.geometry, forward25832to4326) };
-  });
-  return { type: "FeatureCollection", features };
-}
-// Transformere hele FeatureCollection til EPSG:25832
-export function to25832(fc: FeatureCollection<Geometry>): FeatureCollection<Geometry> {
-  const features: Feature<Geometry>[] = fc.features.map((f) => {
-    if (!f.geometry) return f;
-    return { ...f, geometry: transformGeometry(f.geometry, inverse4326to25832) };
   });
   return { type: "FeatureCollection", features };
 }

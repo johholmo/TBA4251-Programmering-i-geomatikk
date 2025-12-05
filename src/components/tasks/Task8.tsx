@@ -34,7 +34,7 @@ export default function Task8({ isOpen, onClose, onBack, onAdvance }: Props8) {
       <p>
         Bruk deretter <strong>Feature Extractor</strong>-verktøyet for å finne de veiene hvor
         "vegkategori" er lik "E" <em>eller</em> "R" (for europa- og riksvei). Lag en buffer på{" "}
-        <strong>100 meter</strong> rundt disse veiene, og trekk laget med buffer fra de mulige
+        <strong>300 meter</strong> rundt disse veiene, og trekk laget med buffer fra de mulige
         byggeområdene.
       </p>
 
