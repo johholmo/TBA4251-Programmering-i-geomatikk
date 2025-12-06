@@ -17,7 +17,7 @@ export default function Task1({ isOpen, onClose, onAdvance }: Props1) {
       <p>
         Først og fremst skal du laste opp data. Du finner alle datasettene i GitHub-repoet, i mappen{" "}
         <a
-          href="https://github.com/johholmo/TBA4251-Programmering-i-geomatikk/tree/main/data"
+          href="https://github.com/johholmo/TBA4251-Programmering-i-geomatikk/tree/main/public/data"
           target="_blank"
           rel="noopener noreferrer"
         >
